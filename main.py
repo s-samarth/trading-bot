@@ -9,6 +9,9 @@ logging.basicConfig(level=Config.logging_level, filename=f"{Config.logs_dir}/app
 
 # Import the other modules after setting the logging configuration so that they can use the same configuration
 
+from TelegramBot import App
+from TelegramBot import Commands
+
 
 if __name__ == "__main__":
     logging.debug("Debug message")
@@ -17,3 +20,6 @@ if __name__ == "__main__":
     logging.error("Error message")
     logging.critical("Critical message")
     logging.log(logging.DEBUG, "Log message")
+
+    app = App()
+    app.run()
