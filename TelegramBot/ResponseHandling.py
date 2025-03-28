@@ -3,6 +3,7 @@ class ResponseHandling:
         self.text = text
         pass
 
+    @classmethod
     def handle_response(text: str) -> str:
         text = text.lower()
         if 'hello' in text or 'hi' in text:

@@ -56,14 +56,14 @@ class UpstoxLogin:
         self.base_auth_url = "https://api.upstox.com/v2/login/authorization/dialog"
         self.redirect_uri = self.env.redirect_uri
         self.response_type = "code"
-        self.scope = "profile,trade,offline_access"
+        # self.scope = "profile,trade,offline_access"
         self.auth_code = self.env.auth_code
     
     @final
     def update_auth_code(self):
         # Open the browser to get the auth code, @final decorator ensures that this method cannot be overridden
         encoded_redirect_uri = urllib.parse.quote(self.redirect_uri, safe="")
-        self.auth_url = f"{self.base_auth_url}?response_type={self.response_type}&client_id={self.api_key}&redirect_uri={encoded_redirect_uri}&scope={self.scope}"
+        self.auth_url = f"{self.base_auth_url}?response_type={self.response_type}&client_id={self.api_key}&redirect_uri={encoded_redirect_uri}"
 
         webbrowser.open(self.auth_url)
         self.auth_code = input("Enter the auth code: ")
@@ -88,7 +88,7 @@ class UpstoxLogin:
             print("Error:", response.json())
             access_token = None
         
-        return access_token
+        return access_token, response
     
     def save_access_token(self, access_token: str):
         with open("access_token.txt", "w") as file:
@@ -115,7 +115,7 @@ class UpstoxLogin:
 
 if __name__ == "__main__":
     upstox_login = UpstoxLogin()
-    access_token = upstox_login.generate_access_token()
+    access_token, response = upstox_login.generate_access_token()
     is_session_active = upstox_login.check_if_trading_session_active(access_token)
     # configuration = Configuration()
     # configuration.access_token = access_token

@@ -11,7 +11,7 @@ class MessageHandling:
     def __init__(self):
         pass
 
-    async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         message_tyoe: str = update.message.chat.type
         text: str = update.message.text
         load_dotenv()

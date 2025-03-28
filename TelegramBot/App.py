@@ -20,17 +20,21 @@ class App:
         app = Application.builder().token(bot_token).build()
 
         # Command Handlers
-        app.add_handler(CommandHandler("start", Commands.start))
-        app.add_handler(CommandHandler("help", Commands.help))
-        app.add_handler(CommandHandler("balance", Commands.balance))
-        app.add_handler(CommandHandler("positions", Commands.positions))
-        app.add_handler(CommandHandler("orders", Commands.orders))
+        commands = Commands()
+        app.add_handler(CommandHandler("start", commands.start))
+        app.add_handler(CommandHandler("help", commands.help))
+        app.add_handler(CommandHandler("balance", commands.balance))
+        app.add_handler(CommandHandler("positions", commands.positions))
+        app.add_handler(CommandHandler("orders", commands.orders))
+        app.add_handler(CommandHandler("login", commands.login))
 
         # Message Handler
-        app.add_handler(MessageHandler(filters.TEXT, MessageHandling.handle_message))
+        message_handling = MessageHandling()
+        app.add_handler(MessageHandler(filters.TEXT, message_handling.handle_message))
 
         # Error Handler
-        app.add_error_handler(ErrorHandling.handle_error)
+        error_handling = ErrorHandling()
+        app.add_error_handler(error_handling.handle_error)
 
         # Polling
         print("Bot is running...")
