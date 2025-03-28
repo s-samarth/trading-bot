@@ -1,0 +1,6 @@
+DEBUG (28/03/2025 03:03:20 AM): Debug message (Line: 13 [main.py])
+INFO (28/03/2025 03:03:20 AM): Info message (Line: 14 [main.py])
+WARNING (28/03/2025 03:03:20 AM): Warning message (Line: 15 [main.py])
+ERROR (28/03/2025 03:03:20 AM): Error message (Line: 16 [main.py])
+CRITICAL (28/03/2025 03:03:20 AM): Critical message (Line: 17 [main.py])
+DEBUG (28/03/2025 03:03:20 AM): Log message (Line: 18 [main.py])
