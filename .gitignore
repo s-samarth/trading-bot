@@ -2,3 +2,4 @@
 access_token.txt
 __pycache__/
 *.DS_Store
+*.log
