@@ -1,13 +1,13 @@
 import os
 import sys
 from pprint import pprint
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import upstox_client
 from upstox_client import ApiClient 
 from upstox_client.rest import ApiException
 
-from Upstox.UpstoxLogin import UpstoxLogin
+from API.Upstox.UpstoxLogin import UpstoxLogin
 
 
 if __name__ == "__main__":

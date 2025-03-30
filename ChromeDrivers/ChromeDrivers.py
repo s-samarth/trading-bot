@@ -39,8 +39,8 @@ class ChromeDrivers:
             self.time_installation(start_time, end_time)
             self.driver_path = driver_path
             self.refresh_date = datetime.now().strftime("%Y-%m-%d")
-            self.write_env_variable("CHROMEDRIVER_PATH", self.driver_path)
-            self.write_env_variable("CHROMEDRIVER_REFRESH_DATE", self.refresh_date)
+            self._write_env_variable("CHROMEDRIVER_PATH", self.driver_path)
+            self._write_env_variable("CHROMEDRIVER_REFRESH_DATE", self.refresh_date)
             print(f"✅ ChromeDriver refreshed and cached at: {driver_path} on {self.refresh_date}")
             
         except Exception as e:
@@ -81,7 +81,7 @@ class ChromeDrivers:
             print(f"❌ Error initializing ChromeDriver: {e}")
             return None
         
-    def write_env_variable(self, key, value, env_file="../../.env"):
+    def _write_env_variable(self, key, value, env_file="../.env"):
         """Writes or updates a key-value pair in the .env file."""
         lines = []
         updated = False

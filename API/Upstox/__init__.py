@@ -1,4 +1,4 @@
-from .UpstoxLogin import UpstoxLogin, EnvironmentVariables
+from .UpstoxLogin import UpstoxLogin
 from .TradeExecutor import TradeExecutor
 
 __all__ = ["UpstoxLogin", "EnvironmentVariables", "TradeExecutor"]

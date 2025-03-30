@@ -1,25 +1,26 @@
 import os
 import time
+import sys
 import random
 import urllib.parse as urlparse
 from enum import StrEnum
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import pyotp
 from dotenv import load_dotenv
 from kiteconnect import KiteConnect
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from ChromeDrivers import ChromeDrivers
+from ChromeDrivers.ChromeDrivers import ChromeDrivers
 
-class RequestTokenMode(StrEnum):
+class LoginMode(StrEnum):
     MANUAL = "manual"
     AUTOMATED = "automated"
 
 class Login:
-    def __init__(self, request_token_mode=RequestTokenMode.AUTOMATED):
+    def __init__(self, kite: KiteConnect, login_mode=LoginMode.AUTOMATED):
         """"
         ""Initialize the Login class with the provided request token mode."
         """
@@ -30,9 +31,9 @@ class Login:
         self.mpin = os.getenv("ZERODHA_MPIN")
         self.api_secret = os.getenv("ZERODHA_API_SECRET")
         self.totp_secret = os.getenv("ZERODHA_TOTP_SECRET")
-        self.kite = KiteConnect(api_key=self.api_key) 
+        self.kite = kite
         self.access_token = self.get_access_token()  # Load access token from file if it exists
-        self.request_token_mode = request_token_mode
+        self.login_mode = login_mode
 
     def login(self):
         if self.access_token:
@@ -40,23 +41,23 @@ class Login:
             try:
                 self.kite.profile()
                 print("Access token is valid.")
-                return
+                return self.kite
             except Exception as e:
                 print("Access token is invalid. Generating a new one.")
                 self.kite.set_access_token(None)
 
         login_url = self.kite.login_url()
 
-        if self.request_token_mode == RequestTokenMode.MANUAL:
+        if self.login_mode == LoginMode.MANUAL:
             print("Logging in to Zerodha Manually...")
             request_token = self.manual_login(login_url=login_url)
 
-        elif self.request_token_mode == RequestTokenMode.AUTOMATED:
+        elif self.login_mode == LoginMode.AUTOMATED:
             print("Logging in to Zerodha Automatatedly...")
             request_token = self.automate_login_selenium(login_url=login_url)
 
         else:
-            print("Invalid request token mode. Please choose either 'manual' or 'automatic'.")
+            print("Invalid login mode. Please choose either 'manual' or 'automatic'.")
             request_token = None
         
         if request_token:
@@ -72,9 +73,14 @@ class Login:
                 except Exception as e:  
                     print("Error retrieving profile:", str(e))
                     print("Access token may be invalid.")
+                    return None
                 print("Access token is valid.")
             else:
                 print("Failed to generate access token.")
+                return None
+        else:
+            print("Failed to retrieve request token.")
+            return None
         
         return self.kite
 
@@ -140,7 +146,7 @@ class Login:
             # Parse the URL to extract the request token
             parsed = urlparse.urlparse(current_url)
             query_params = urlparse.parse_qs(parsed.query)
-            request_token = query_params.get("request_token", [""])[0]
+            request_token = query_params.get("request_token", [""])[0].strip()
 
             if not request_token or request_token == "":
                 raise ValueError("Request token is empty or invalid.")
@@ -180,6 +186,9 @@ class Login:
             return None
 
 if __name__ == "__main__":
-    login = Login()
+    # Initialize KiteConnect
+    load_dotenv()
+    kite = KiteConnect(api_key=os.getenv("ZERODHA_API_KEY"))
+    login = Login(kite=kite)
     kite = login.login() 
     print("Login successful.")
