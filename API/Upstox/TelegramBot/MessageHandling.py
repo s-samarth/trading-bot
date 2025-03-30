@@ -15,7 +15,7 @@ class MessageHandling:
         message_tyoe: str = update.message.chat.type
         text: str = update.message.text
         load_dotenv()
-        bot_username = os.getenv("BOT_USERNAME")
+        bot_username = os.getenv("TELEGRAM_BOT_USERNAME")
 
         print(f"User: {update.message.chat.id} in ({message_tyoe}): {text}")
 

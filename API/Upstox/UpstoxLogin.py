@@ -7,18 +7,17 @@ import requests
 import urllib.parse
 from dotenv import load_dotenv
 import upstox_client
-from upstox_client import Configuration, ApiClient
-from upstox_client.rest import ApiException
+
 
 class EnvironmentVariables:
     def __init__(self):
         load_dotenv()
-        self.api_key = os.getenv("API_KEY")
-        self.api_secret = os.getenv("API_SECRET")
-        self.sandbox_access_token = os.getenv("SANDBOX_ACCESS_TOKEN")
-        self.redirect_uri = os.getenv("REDIRECT_URI")
-        if os.getenv("AUTH_CODE"):
-            self.auth_code = os.getenv("AUTH_CODE")
+        self.api_key = os.getenv("UPSTOX_API_KEY")
+        self.api_secret = os.getenv("UPSTOX_API_SECRET")
+        self.sandbox_access_token = os.getenv("UPSTOX_SANDBOX_ACCESS_TOKEN")
+        self.redirect_uri = os.getenv("UPSTOX_REDIRECT_URI")
+        if os.getenv("UPSTOX_AUTH_CODE"):
+            self.auth_code = os.getenv("UPSTOX_AUTH_CODE")
         else:
             self.auth_code = None
 
@@ -58,6 +57,23 @@ class UpstoxLogin:
         self.response_type = "code"
         # self.scope = "profile,trade,offline_access"
         self.auth_code = self.env.auth_code
+
+    def login(self) -> upstox_client.Configuration:
+        if os.path.exists("access_token.txt"):
+            access_token = self.get_access_token()
+        else:
+            access_token, _ = self.generate_access_token()
+
+        configuration = upstox_client.Configuration()
+        try:
+            configuration.access_token = access_token
+        except Exception as e:
+            print("Error:", e)
+            access_token, _ = self.generate_access_token()
+            configuration.access_token = access_token
+        
+        print("✅ Logged in successfully!")
+        return configuration
     
     @final
     def update_auth_code(self):
@@ -68,7 +84,7 @@ class UpstoxLogin:
         webbrowser.open(self.auth_url)
         self.auth_code = input("Enter the auth code: ")
         self.auth_code = self.auth_code.strip()
-        self.env.write_env_variable("AUTH_CODE", self.auth_code)
+        self.env.write_env_variable("UPSTOX_AUTH_CODE", self.auth_code, env_file="../../.env")
 
     def generate_access_token(self):
         self.update_auth_code()
@@ -91,12 +107,12 @@ class UpstoxLogin:
         return access_token, response
     
     def save_access_token(self, access_token: str):
-        with open("access_token.txt", "w") as file:
+        with open("../access_token.txt", "w") as file:
             file.write(access_token)
         print("Access token saved successfully")
 
     def get_access_token(self):
-        with open("access_token.txt", "r") as file:
+        with open("../access_token.txt", "r") as file:
             return file.read()
         
     def check_if_trading_session_active(self, access_token: str):

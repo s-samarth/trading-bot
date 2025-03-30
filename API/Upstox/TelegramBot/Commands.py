@@ -10,9 +10,9 @@ from telegram.ext import ContextTypes, CallbackContext
 class Commands:
     def __init__(self):
         load_dotenv()
-        self.api_key = os.getenv("API_KEY")
+        self.api_key = os.getenv("UPSTOX_API_KEY")
         self.base_auth_url = "https://api.upstox.com/v2/login/authorization/dialog"
-        self.redirect_uri = os.getenv("REDIRECT_URI")
+        self.redirect_uri = os.getenv("UPSTOX_REDIRECT_URI")
 
     async def start(self, update: Update, context: ContextTypes):
         await update.message.reply_text("Hello! I am a bot to help you with your trading. How can I help you today?")

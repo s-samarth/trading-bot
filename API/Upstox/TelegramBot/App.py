@@ -15,7 +15,7 @@ class App:
 
     def run(self):
         load_dotenv()
-        bot_token = os.getenv("BOT_TOKEN")
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
         print("Bot is starting...")
         app = Application.builder().token(bot_token).build()
 

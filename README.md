@@ -1,10 +1,16 @@
 # trading-bot
 I Aim to make a completely automated trading bot which is going to make a lot of money.
-The bot is going to trade on Upstox.
 
 ### Running Instructions
-1) In Bash enter: ngrok http 8000
-2) Run python main.py
-3) Run python server.py
+1) Setup the environment for running
+```bash
+conda create -n trading_env python=3.13.2
+pip install -r requirements.txt
+```
 
-Then you would be setup to generate a new access token from Telegram on your phone
+2) Setup Environment Variables, Enter your environment variables in SetupEnv.py and run
+```python
+python SetupEnv.py
+``` 
+3) Run python main.py
+

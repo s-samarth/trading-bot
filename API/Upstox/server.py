@@ -3,14 +3,15 @@ import requests
 import os
 from dotenv import load_dotenv
 
-from UpstoxLogin import UpstoxLogin, EnvironmentVariables
+from Upstox import UpstoxLogin, EnvironmentVariables
+
 
 # Load API Keys
 load_dotenv()
-UPSTOX_API_KEY = os.getenv("API_KEY")
-UPSTOX_API_SECRET = os.getenv("API_SECRET")
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+UPSTOX_API_KEY = os.getenv("UPSTOX_API_KEY")
+UPSTOX_API_SECRET = os.getenv("UPSTOX_API_SECRET")
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 app = Flask(__name__)
 
