@@ -2,12 +2,19 @@ import os
 import gzip
 import shutil
 import json
+from typing import Dict
 
 class DataExtractor:
-    def __init__(self):
-        pass
+    def __init__(self, gzip_file_path="UpstoxData/complete.json.gz", 
+                 output_file_path="UpstoxData/complete.json", 
+                 complete_data_upstox_path="UpstoxData/complete.json",
+                 nse_data_eq_path="UpstoxData/nse_eq.json"):
+        self.gzip_file_path = gzip_file_path
+        self.output_file_path = output_file_path
+        self.complete_data_upstox_path = complete_data_upstox_path
+        self.nse_data_eq_path = nse_data_eq_path
 
-    def load_upstox_data(self, file_path) -> dict:
+    def load_complete_upstox_data(self) -> dict:
         """
         Loads Upstox data from a specified file path.
 
@@ -15,20 +22,18 @@ class DataExtractor:
         :return: Loaded data as a dictionary.
         """
         try:
-            with open(file_path, 'r') as file:
+            with open(self.complete_data_upstox_path, 'r') as file:
                 data = json.load(file)
-            print(f"✅ Loaded data from {file_path}")
+            print(f"✅ Loaded data from {self.complete_data_upstox_path}")
             return data
         except FileNotFoundError:
-            print(f"❌ File not found: {file_path}")
+            print(f"❌ File not found: {self.complete_data_upstox_path}")
             return None
         except Exception as e:
-            print(f"❌ Error loading data from {file_path}: {e}")
+            print(f"❌ Error loading data from {self.complete_data_upstox_path}: {e}")
             return None
-        
 
-
-    def extract_gzip_file(self, gzip_file_path, output_file_path):
+    def extract_gzip_file(self):
         """
         Extracts a gzip file and saves the output to a specified path.
 
@@ -37,20 +42,120 @@ class DataExtractor:
         :param output_file_path: Path where the extracted file will be saved.
         """
         try:
-            with gzip.open(gzip_file_path, 'rb') as f_in:
-                with open(output_file_path, 'wb') as f_out:
+            with gzip.open(self.gzip_file_path, 'rb') as f_in:
+                with open(self.output_file_path, 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
-            print(f"✅ Extracted {gzip_file_path} to {output_file_path}")
+            print(f"✅ Extracted {self.gzip_file_path} to {self.output_file_path}")
         except Exception as e:
-            print(f"❌ Error extracting {gzip_file_path}: {e}")
+            print(f"❌ Error extracting {self.gzip_file_path}: {e}")
 
+    def extract_nse_eq_data(self, save_data=True):
+        """
+        Extracts NSE_EQ data from the loaded data.
+
+        :param data: file path to the Upstox data json file.
+        :return: Filtered NSE_EQ data.
+        """
+        data = self.load_complete_upstox_data()
+        if data is None:
+            print("❌ Failed to load data.")
+            return None
+        # Filter the data for NSE_EQ segment
+        nse_eq_data = [entry for entry in data if entry.get('segment') == 'NSE_EQ' and entry.get('exchange') == 'NSE' and entry.get('instrument_type') == 'EQ']
+        if len(nse_eq_data) == 0:
+            print("❌ No NSE_EQ data found.")
+            return None
+        print(f"✅ Extracted NSE_EQ data from {self.complete_data_upstox_path} with {len(nse_eq_data)} entries.")
+
+        try: 
+            symbols = {entry['trading_symbol'] for entry in nse_eq_data}
+            assert len(nse_eq_data) == len(symbols), "Trading Symbols are not unique in NSE EQ data."
+        except AssertionError as e:
+            print(f"Assertion Error: {e}")
+            print(f"Items in NSE_EQ Data: {len(nse_eq_data)}")
+            print(f"Items in symbols: {len(symbols)}")
+            return None
+        
+        if save_data:
+            try:
+                self.save_nse_eq_data(nse_eq_data)
+                
+            except Exception as e:
+                print(f"❌ Error saving NSE_EQ data: {e}")
+                return None
+
+        return nse_eq_data
+    
+    def save_nse_eq_data(self, nse_eq_data: Dict):
+        """
+        Saves the extracted NSE_EQ data to a specified file path.
+
+        :param nse_eq_data: Filtered NSE_EQ data.
+        """
+        
+        if nse_eq_data is None:
+            print("❌ Failed to extract NSE_EQ data.")
+            return None
+        try:
+            with open(self.nse_data_eq_path, 'w') as file:
+                json.dump(nse_eq_data, file)
+            print(f"✅ Saved NSE_EQ data to {self.nse_data_eq_path}")
+        except Exception as e:
+            print(f"❌ Error saving NSE_EQ data to {self.nse_data_eq_path}: {e}")
+
+    def load_nse_eq_data(self):
+        """
+        Loads NSE_EQ data from a specified file path.
+
+        :param nse_data_eq_path: Path to the NSE_EQ data json file.
+        :return: Loaded NSE_EQ data as a dictionary.
+        """
+        try:
+            with open(self.nse_data_eq_path, 'r') as file:
+                data = json.load(file)
+            print(f"✅ Loaded NSE_EQ data from {self.nse_data_eq_path}")
+            return data
+        except FileNotFoundError:
+            print(f"❌ File not found: {self.nse_data_eq_path}")
+            return None
+        except Exception as e:
+            print(f"❌ Error loading NSE_EQ data from {self.nse_data_eq_path}: {e}")
+            return None
+
+    def get_trading_symbol_to_isin_map(self): 
+        """
+        Maps trading symbols to ISINs from the NSE_EQ data.
+        ISIN are International Securities Identification Number.
+
+        :return: Dictionary mapping trading symbols to ISINs.
+        """
+        nse_eq_data = self.load_nse_eq_data()
+        symbol_to_isin = {entry['trading_symbol']: entry['isin'] for entry in nse_eq_data}
+        print(f"✅ Mapped {len(symbol_to_isin)} trading symbols to ISINs.")
+        return symbol_to_isin
+    
+    def get_trading_instrument_for_symbol(self, symbol):
+        """
+        Retrieves the trading instrument for a given symbol.
+
+        :param symbol: Trading symbol to look up.
+        :return: Dictionary containing trading instrument details.
+        """
+        trading_instrument = {}
+        symbol_to_isin = self.get_trading_symbol_to_isin_map()
+        if symbol in symbol_to_isin.keys():
+            isin = symbol_to_isin[symbol]
+            trading_instrument = f"NSE_EQ|{isin}"
+            print(f"✅ Found trading instrument for symbol {symbol}: {trading_instrument}")
+            return trading_instrument
+        else:
+            print(f"❌ Symbol {symbol} not found in NSE_EQ data.")
+            return None
 
 if __name__ == "__main__":
     # Example usage
     extractor = DataExtractor()
-    # extractor.extract_gzip_file("UpstoxData/complete.json.gz", "UpstoxData/complete.json")
-    data = extractor.load_upstox_data("UpstoxData/complete.json")
-    if data:
-        print(f"Data: {data[0]}")
-    else:
-        print("Failed to load data.")
+    # nse_eq_data = extractor.extract_nse_eq_data()
+    # nse_eq_data = extractor.load_nse_eq_data()
+    trading_symbol = "RELIANCE"
+    trading_instrument = extractor.get_trading_instrument_for_symbol(trading_symbol)

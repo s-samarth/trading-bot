@@ -14,14 +14,15 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-
 from ChromeDrivers.ChromeDrivers import ChromeDrivers
+
 
 class LoginMode(StrEnum):
     MANUAL = "manual"
     AUTOMATED = "automated"
 
-class UpstoxLogin:
+
+class Login:
     def __init__(self, login_mode=LoginMode.AUTOMATED):
         # Load environment variables
         load_dotenv()
@@ -39,7 +40,7 @@ class UpstoxLogin:
             self.mobile_number = os.getenv("UPSTOX_MOBILE_NUMBER")
             self.totp_secret = os.getenv("UPSTOX_TOTP_SECRET")
             self.mpin = os.getenv("UPSTOX_MPIN")
-        self.access_token = None  # Load access token from file if it exists
+        self.access_token = self.get_access_token()  # Load access token from file if it exists
 
     def login(self) -> str:
         if self.access_token:
@@ -219,10 +220,7 @@ class UpstoxLogin:
             print("Error fetching user profile:", response.json())
             return None
             
-        
-def get_ltp():
-    pass
-
+            
 
 def place_order(access_token):
     url = 'https://api-hft.upstox.com/v2/order/place'
@@ -238,7 +236,7 @@ def place_order(access_token):
         'validity': 'DAY',
         'price': 0,
         'tag': 'string',
-        'instrument_token': 'NSE_EQ|INE669E01016',
+        'instrument_token': 'NSE_EQ|INE002A01018',
         'order_type': 'MARKET',
         'transaction_type': 'BUY',
         'disclosed_quantity': 0,
@@ -259,9 +257,13 @@ def place_order(access_token):
         print('Error:', str(e))
 
 if __name__ == "__main__":
-    # extract_gzip_file("Data/NSE.csv.gz", "Data/NSE.csv")
-    upstox_login = UpstoxLogin()
+    upstox_login = Login()
     access_token = upstox_login.login()
+    if access_token:
+        print("Logged in successfully!")
+        # place_order(access_token)
+    else:
+        print("Failed to login.")
 
 
     
