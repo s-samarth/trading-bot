@@ -7,12 +7,14 @@ from typing import Dict
 class DataExtractor:
     def __init__(self, gzip_file_path="UpstoxData/complete.json.gz", 
                  output_file_path="UpstoxData/complete.json", 
-                 complete_data_upstox_path="UpstoxData/complete.json",
-                 nse_data_eq_path="UpstoxData/nse_eq.json"):
+                 complete_data_upstox_path="UpstoxData/complete.json", 
+                 nse_data_eq_path="UpstoxData/nse_eq.json", 
+                 nse_trading_symbol_to_isin_path="UpstoxData/symbol_to_isin.json"):
         self.gzip_file_path = gzip_file_path
         self.output_file_path = output_file_path
         self.complete_data_upstox_path = complete_data_upstox_path
         self.nse_data_eq_path = nse_data_eq_path
+        self.nse_trading_symbol_to_isin_path = nse_trading_symbol_to_isin_path
 
     def load_complete_upstox_data(self) -> dict:
         """
@@ -122,7 +124,7 @@ class DataExtractor:
             print(f"❌ Error loading NSE_EQ data from {self.nse_data_eq_path}: {e}")
             return None
 
-    def get_trading_symbol_to_isin_map(self): 
+    def get_nse_trading_symbol_to_isin_map(self): 
         """
         Maps trading symbols to ISINs from the NSE_EQ data.
         ISIN are International Securities Identification Number.
@@ -132,9 +134,35 @@ class DataExtractor:
         nse_eq_data = self.load_nse_eq_data()
         symbol_to_isin = {entry['trading_symbol']: entry['isin'] for entry in nse_eq_data}
         print(f"✅ Mapped {len(symbol_to_isin)} trading symbols to ISINs.")
+        self.save_nse_trading_symbol_to_isin_map(symbol_to_isin)
         return symbol_to_isin
     
-    def get_trading_instrument_for_symbol(self, symbol):
+    def save_nse_trading_symbol_to_isin_map(self, symbol_to_isin):
+        """
+        Saves the trading symbol to ISIN mapping to a specified file path.
+
+        :param symbol_to_isin: Dictionary mapping trading symbols to ISINs.
+        """
+        try:
+            with open(self.nse_trading_symbol_to_isin_path, 'w') as file:
+                json.dump(symbol_to_isin, file)
+            print(f"✅ Saved trading symbol to ISIN mapping to {self.nse_trading_symbol_to_isin_path}")
+        except Exception as e:
+            print(f"❌ Error saving trading symbol to ISIN mapping: {e}")
+        return None
+    
+    def load_nse_trading_symbol_to_isin_map(self) -> Dict:
+        """
+        Loads the trading symbol to ISIN mapping from a specified file path.
+
+        :return: Dictionary mapping trading symbols to ISINs.
+        """
+        with open(self.nse_trading_symbol_to_isin_path, 'r') as file:
+            symbol_to_isin = json.load(file)
+        return symbol_to_isin
+
+    
+    def get_nse_trading_instrument_for_symbol(self, symbol):
         """
         Retrieves the trading instrument for a given symbol.
 
@@ -142,15 +170,19 @@ class DataExtractor:
         :return: Dictionary containing trading instrument details.
         """
         trading_instrument = {}
-        symbol_to_isin = self.get_trading_symbol_to_isin_map()
+        try: 
+            symbol_to_isin = self.load_nse_trading_symbol_to_isin_map()
+        except Exception as e:
+            print(f"❌ Error loading trading symbol to ISIN mapping: {e}")
+            symbol_to_isin = self.get_trading_symbol_to_isin_map()
+
         if symbol in symbol_to_isin.keys():
             isin = symbol_to_isin[symbol]
             trading_instrument = f"NSE_EQ|{isin}"
-            print(f"✅ Found trading instrument for symbol {symbol}: {trading_instrument}")
+            # print(f"✅ Found trading instrument for symbol {symbol}: {trading_instrument}")
             return trading_instrument
         else:
-            print(f"❌ Symbol {symbol} not found in NSE_EQ data.")
-            return None
+            raise ValueError(f"❌ Symbol {symbol} not found in NSE_EQ data.")
 
 if __name__ == "__main__":
     # Example usage
@@ -158,4 +190,5 @@ if __name__ == "__main__":
     # nse_eq_data = extractor.extract_nse_eq_data()
     # nse_eq_data = extractor.load_nse_eq_data()
     trading_symbol = "RELIANCE"
-    trading_instrument = extractor.get_trading_instrument_for_symbol(trading_symbol)
+    trading_instrument = extractor.get_nse_trading_instrument_for_symbol(trading_symbol)
+    print(f"Trading instrument for {trading_symbol}: {trading_instrument}")

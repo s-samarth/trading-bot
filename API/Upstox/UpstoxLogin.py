@@ -44,7 +44,7 @@ class Login:
 
     def login(self) -> str:
         if self.access_token:
-            user_profile = self.get_user_profile()
+            user_profile = self._get_user_profile()
             if user_profile:
                 print("Access token is valid.")
                 return self.access_token
@@ -60,7 +60,7 @@ class Login:
             print("Invalid login mode. Please choose either 'manual' or 'automated'.")
             return None
 
-        user_profile = self.get_user_profile()
+        user_profile = self._get_user_profile()
         if user_profile:
             print("Logged in successfully!")
         else:
@@ -141,7 +141,6 @@ class Login:
             parsed = urlparse.urlparse(current_url)
             query_params = urlparse.parse_qs(parsed.query)
             auth_code = query_params.get("code", [""])[0].strip()
-            print("Auth Code: ", auth_code)
             if not auth_code or auth_code == "":
                 raise ValueError("Auth Code is empty or invalid.")
 
@@ -164,7 +163,6 @@ class Login:
         parsed = urlparse.urlparse(auth_url)
         query_params = urlparse.parse_qs(parsed.query)
         auth_code = query_params.get("code", [""])[0].strip()
-        print("Auth Code: ", auth_code)
         if not auth_code or auth_code == "":
             raise ValueError("Auth Code is empty or invalid.")
         return auth_code
@@ -206,65 +204,36 @@ class Login:
             print(f"Error retrieving access token: {str(e)}")
             return None
         
-    def get_user_profile(self):
+    def logout(self, access_token: str):
+        url = 'https://api.upstox.com/v2/logout'
+        headers = headers = {
+            'Accept': 'application/json',
+            'Authorization': f'Bearer {access_token}'
+        }
+
+        response = requests.delete(url, headers=headers)
+        if response.status_code == 200:
+            print("Logged out successfully.")
+            return True
+        else:
+            print("Error logging out:", response.json())
+            return False
+        
+    def _get_user_profile(self):
         url = 'https://api.upstox.com/v2/user/profile'
         headers = {
             'Accept': 'application/json',
             'Authorization': f'Bearer {self.access_token}'
         }
         response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            print("User profile fetched successfully.")
-            return response.json()
-        else:
-            print("Error fetching user profile:", response.json())
-            return None
+        return response.json() if response.status_code == 200 else None
             
-            
-
-def place_order(access_token):
-    url = 'https://api-hft.upstox.com/v2/order/place'
-    headers = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {access_token}',
-    }
-
-    data = {
-        'quantity': 1,
-        'product': 'D',
-        'validity': 'DAY',
-        'price': 0,
-        'tag': 'string',
-        'instrument_token': 'NSE_EQ|INE002A01018',
-        'order_type': 'MARKET',
-        'transaction_type': 'BUY',
-        'disclosed_quantity': 0,
-        'trigger_price': 0,
-        'is_amo': False,
-    }
-
-    try:
-        # Send the POST request
-        response = requests.post(url, json=data, headers=headers)
-
-        # Print the response status code and body
-        print('Response Code:', response.status_code)
-        print('Response Body:', response.json())
-
-    except Exception as e:
-        # Handle exceptions
-        print('Error:', str(e))
 
 if __name__ == "__main__":
     upstox_login = Login()
     access_token = upstox_login.login()
-    if access_token:
-        print("Logged in successfully!")
-        # place_order(access_token)
-    else:
-        print("Failed to login.")
 
+    # upstox_login.logout(access_token)
 
     
     
