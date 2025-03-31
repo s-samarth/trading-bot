@@ -12,5 +12,9 @@ pip install -r requirements.txt
 ```python
 python SetupEnv.py
 ``` 
+
 3) Run python main.py
+```
+python main.py
+```
 

@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 import random
 import webbrowser
 from enum import StrEnum
@@ -229,11 +230,65 @@ class Login:
         return response.json() if response.status_code == 200 else None
             
 
+class SandboxLogin:
+    def __init__(self):
+        self.sandbox_access_token_file_path = "sandbox_access_token.txt"
+
+    def login(self):
+        sandbox_access_token = self.get_sandbox_access_token()
+        order = self._place_order(sandbox_access_token)
+        if order:
+            return sandbox_access_token
+        else:
+            raise PermissionError("Sandbox Token Expired, Regenerate and try again.")
+            
+    def get_sandbox_access_token(self):
+        try:
+            with open(self.sandbox_access_token_file_path, "r") as file:
+                sandbox_access_token = file.read().strip()
+            print("Sandbox Access token retrieved from file.")
+            return sandbox_access_token
+        except FileNotFoundError:
+            print("Sandbox Access token file not found. Please login again.")
+            return None
+        except Exception as e:
+            print(f"Error retrieving sandbox access token: {str(e)}")
+            return None
+        
+    def _place_order(self, sandbox_access_token: str):
+        url = "https://api-sandbox.upstox.com/v2/order/place"
+
+        payload = json.dumps({
+        "quantity": 1,
+        "product": "D",
+        "validity": "DAY",
+        "price": 0,
+        "tag": "string",
+        "instrument_token": "NSE_EQ|INE848E01016",
+        "order_type": "MARKET",
+        "transaction_type": "BUY",
+        "disclosed_quantity": 0,
+        "trigger_price": 0,
+        "is_amo": False
+        })
+        headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {sandbox_access_token}',
+        'Accept': 'application/json'
+        }
+
+        response = requests.request("POST", url, headers=headers, data=payload)
+
+        return response.json() if response.status_code == 200 else None
+
+
 if __name__ == "__main__":
     upstox_login = Login()
     access_token = upstox_login.login()
-
     # upstox_login.logout(access_token)
+
+    sandbox_login = SandboxLogin()
+    sandbox_access_token = sandbox_login.login()
 
     
     

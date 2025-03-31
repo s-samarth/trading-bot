@@ -4,6 +4,45 @@ import shutil
 import json
 from typing import Dict
 
+from Constants import Exchange
+
+def generate_instrument_token(trading_symbol: str, exchange: Exchange):
+    """
+    Generates the instrument token for a given symbol and exchange.
+
+    :param symbol: Trading symbol to look up.
+    :param exchange: Exchange to look up.
+    :return: Instrument token.
+    """
+    if exchange == Exchange.NSE:
+        extractor = DataExtractor()
+        trading_instrument = extractor.get_nse_trading_instrument_for_symbol(trading_symbol)
+        return trading_instrument
+            
+    elif exchange == Exchange.BSE:
+        raise NotImplementedError("BSE exchange is not supported yet.")
+    
+    elif exchange == Exchange.NFO:
+        raise NotImplementedError("NFO exchange is not supported yet.")
+    
+    elif exchange == Exchange.BFO:
+        raise NotImplementedError("BFO exchange is not supported yet.")
+    
+    elif exchange == Exchange.CDS:
+        raise NotImplementedError("CDS exchange is not supported yet.")
+    
+    elif exchange == Exchange.BCD:
+        raise NotImplementedError("BCD exchange is not supported yet.")
+    
+    elif exchange == Exchange.NSCOM:
+        raise NotImplementedError("NSCOM exchange is not supported yet.")
+    
+    elif exchange == Exchange.MCX:
+        raise NotImplementedError("MCX exchange is not supported yet.")
+    
+    else:
+        raise ValueError(f"Unsupported exchange: {exchange}. Please provide a valid exchange.")
+
 class DataExtractor:
     def __init__(self, gzip_file_path="UpstoxData/complete.json.gz", 
                  output_file_path="UpstoxData/complete.json", 
@@ -15,7 +54,7 @@ class DataExtractor:
         self.complete_data_upstox_path = complete_data_upstox_path
         self.nse_data_eq_path = nse_data_eq_path
         self.nse_trading_symbol_to_isin_path = nse_trading_symbol_to_isin_path
-
+        
     def load_complete_upstox_data(self) -> dict:
         """
         Loads Upstox data from a specified file path.
@@ -169,12 +208,11 @@ class DataExtractor:
         :param symbol: Trading symbol to look up.
         :return: Dictionary containing trading instrument details.
         """
-        trading_instrument = {}
         try: 
             symbol_to_isin = self.load_nse_trading_symbol_to_isin_map()
         except Exception as e:
             print(f"❌ Error loading trading symbol to ISIN mapping: {e}")
-            symbol_to_isin = self.get_trading_symbol_to_isin_map()
+            symbol_to_isin = self.get_nse_trading_symbol_to_isin_map()
 
         if symbol in symbol_to_isin.keys():
             isin = symbol_to_isin[symbol]
@@ -183,6 +221,7 @@ class DataExtractor:
             return trading_instrument
         else:
             raise ValueError(f"❌ Symbol {symbol} not found in NSE_EQ data.")
+        
 
 if __name__ == "__main__":
     # Example usage

@@ -74,17 +74,17 @@ class ProductType(StrEnum):
     
 
 class Segment(StrEnum):
-    EQ = "EQ"
-    FO = "FO"
-    COM = "COM"
-    CD = "CD"
+    EQUITY = "EQ"
+    FUTUREOPTION = "FO"
+    COMMODITY = "COM"
+    CURRENCYDERIVATIVE = "CD"
 
     def description(self) -> str:
         descriptions = {
-            "EQ": "Equity segment for trading stocks.",
-            "FO": "Futures and options segment for derivatives trading.",
-            "COM": "Commodity segment for trading commodities.",
-            "CD": "Currency derivatives segment for forex trading."
+            "EQUITY": "Equity segment for trading stocks.",
+            "FUTUREOPTION": "Futures and options segment for derivatives trading.",
+            "COMMODITY": "Commodity segment for trading commodities.",
+            "CURRENCYDERIVATIVE": "Currency derivatives segment for forex trading."
         }
         return descriptions.get(self.value, "Unknown Segment")
     
@@ -220,6 +220,48 @@ class HistoricalDataInterval(StrEnum):
         """
         return {interval.value: interval.description() for interval in cls}
 
+
+class Validity(StrEnum):
+    DAY = "DAY"
+    IOC = "IOC"
+    
+    def description(self) -> str:
+        descriptions = {
+            "DAY": "Order is valid for the entire trading day.",
+            "IOC": "Immediate or Cancel; order is executed immediately or cancelled."
+        }
+        return descriptions.get(self.value, "Unknown Validity")
+    
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all validity descriptions.
+        """
+        return {validity.value: validity.description() for validity in cls}
+
+
+class OrderType(StrEnum):
+    MARKET = "MARKET"
+    LIMIT = "LIMIT"
+    STOPLOSS = "SL"
+    STOPLOSS_MARKET = "SL-M"
+
+    def description(self) -> str:
+        descriptions = {
+            "MARKET": "Order executed at the current market price.",
+            "LIMIT": "Order executed at a specified price or better.",
+            "SL": "Stop-loss order to limit potential losses.",
+            "SL-M": "Stop-loss market order; triggers a market order when the stop price is reached."
+        }
+        return descriptions.get(self.value, "Unknown Order Type")
+    
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all order type descriptions.
+        """
+        return {order_type.value: order_type.description() for order_type in cls}
+    
 
 if __name__ == "__main__":
     print(f"Exchange Descriptions: {Exchange.all_descriptions()}\n")

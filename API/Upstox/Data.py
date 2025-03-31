@@ -16,11 +16,17 @@ class Data:
     """
     Base class for Upstox API data operations.
     """
-    def __init__(self, access_token: str):
+    def __init__(self, access_token: str=None):
         """
         Initialize the Data class with the provided access token.
         """
-        self.access_token = access_token
+        if access_token:
+            self.access_token = access_token
+        else:
+            try:
+                self.access_token = Login().login()
+            except Exception as e:
+                raise RuntimeError("Failed to retrieve access token from Upstox. ") from e
         self.live_url = "https://api.upstox.com/v2"
 
     def validate_response(self, response, endpoint):
@@ -30,7 +36,7 @@ class Data:
         if response.status_code == 200:
             return response.json()
         else:
-            print(f"Error accessing endpoint: {endpoint}, Response: {response.json()}\n")
+            print(f"Error accessing endpoint: {endpoint}, Status code: {response.status_code}, Response: {response.json()}\n")
             return None
     
     def _convert_date_format(self, date_given: str):
