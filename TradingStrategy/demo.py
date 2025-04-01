@@ -4,13 +4,15 @@ from typing import Dict
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from TradingStrategy.Constants import TradingSymbol
-
+from TradingStrategy.StrategyData import TradingStrategyData
+from TradingStrategy.Constants import BaseExchange, BaseTransactionType
+from TradingStrategy.ApiConstantsMapping import UpstoxConstantsMapping as Mappings
 from API.Upstox.UpstoxLogin import Login, SandboxLogin
 from API.Upstox.Data import MarketQuoteData
-from API.Upstox.Constants import Exchange, Segment, TransactionType
+from API.Upstox.Constants import Segment
 from API.Upstox.TradeExecutor import OrderAPI, OrderAPIv3, PlaceOrderData
 
-def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price: float, sell_price: float, quantity: int) -> Dict:
+def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price: float, sell_price: float, quantity: int) -> TradingStrategyData:
     """
     A simple trading strategy which buys is if LTP is less than buy price and sells if LTP is greater than sell price.
     Args:
@@ -20,7 +22,7 @@ def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price
         sell_price (float): The price at which to sell the stock.
         quantity (int): The number of shares to trade.
     Returns:
-        Dict: A dictionary containing the trade details.
+        trade_details (TradingStrategyData): The trade details containing transaction type and other information.
     """
     # Check if the trading symbol is valid
     if trading_symbol not in TradingSymbol:
@@ -31,27 +33,29 @@ def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price
         raise ValueError("Price and quantity must be positive numbers.")
 
     # Initialize the trade details
-    trade_details = {
-        "trading_symbol": trading_symbol,
-        "ltp": ltp,
-        "quantity": quantity,
-        "transaction_type": None,
-    }
+    trade_details = TradingStrategyData(
+        trading_symbol=trading_symbol,
+        ltp=ltp,
+        buy_price=buy_price,
+        sell_price=sell_price,
+        quantity=quantity,
+        transaction_type=None
+    )
 
     # Check if the LTP is less than the buy price
     if ltp < buy_price:
-        trade_details["transaction_type"] = TransactionType.BUY
+        trade_details.transaction_type = BaseTransactionType.BUY
 
     # Check if the LTP is greater than the sell price
     elif ltp > sell_price:
-        trade_details["transaction_type"] = TransactionType.SELL
+        trade_details.transaction_type = BaseTransactionType.SELL
     else:
         pass
 
     # Return the trade details
     return trade_details
 
-def place_order(trade_details, access_token=None):
+def place_order(trade_details: TradingStrategyData, access_token: str = None):
     """
     Places an order based on the trade details.
     Args:
@@ -59,13 +63,14 @@ def place_order(trade_details, access_token=None):
     Returns:
         order_ids (Dict): A dictionary containing the order IDs for the placed orders.
     """
-    if trade_details["transaction_type"]:
+    if trade_details.transaction_type:
         order_api = OrderAPI(access_token=access_token)
         order_api_v3 = OrderAPIv3(access_token=access_token)
 
-        order_data = PlaceOrderData(trading_symbol=trade_details["trading_symbol"], 
-                                    transaction_type=trade_details["transaction_type"],
-                                    quantity=trade_details["quantity"]
+        order_data = PlaceOrderData(trading_symbol=trade_details.trading_symbol, 
+                                    transaction_type=trade_details.transaction_type,
+                                    quantity=trade_details.quantity,
+                                    exchange=Mappings.exchange(BaseExchange.NSE),
                                     )
 
         order_response = order_api.place_order(order_data=order_data)
@@ -92,7 +97,7 @@ if __name__ == "__main__":
     # Fetch LTP of IDEA
     trading_symbol = TradingSymbol.IDEA
     segment = Segment.EQUITY
-    exchange = Exchange.NSE
+    exchange = BaseExchange.NSE
     market_quote = MarketQuoteData(access_token=access_token)
     ltp_data = market_quote.get_ltp(trading_symbol=trading_symbol, exchange=exchange)
     print(f"LTP of {TradingSymbol.IDEA}: {ltp_data}")
@@ -105,18 +110,21 @@ if __name__ == "__main__":
     sell_price = 10
     quantity = 2
     trade_details = simple_trading_strategy(trading_symbol, ltp, buy_price, sell_price, quantity)
-    order_response = place_order(trade_details, sandbox_access_token)
+    print(f"Trade details: {trade_details}")
+    # order_response = place_order(trade_details, sandbox_access_token)
 
     # Run the trading strategy for example 2
     buy_price = 5
     sell_price = 10
     quantity = 2
     trade_details = simple_trading_strategy(trading_symbol, ltp, buy_price, sell_price, quantity)
-    order_response = place_order(trade_details, sandbox_access_token)
+    print(f"Trade details: {trade_details}")
+    # order_response = place_order(trade_details, sandbox_access_token)
 
     # Run the trading strategy for example 3
     buy_price = 5
     sell_price = 6
     quantity = 2
     trade_details = simple_trading_strategy(trading_symbol, ltp, buy_price, sell_price, quantity)
-    order_response = place_order(trade_details, sandbox_access_token)
+    print(f"Trade details: {trade_details}")
+    # order_response = place_order(trade_details, sandbox_access_token)
