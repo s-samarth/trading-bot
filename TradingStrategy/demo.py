@@ -81,7 +81,7 @@ def simple_trading_strategy(
 
     return trade_details
 
-async def place_order(
+def place_order(
     trade_details: TradingStrategyData,
     config: TradingConfig,
     access_token: Optional[str] = None,
@@ -112,12 +112,12 @@ async def place_order(
         # Place order based on API version preference
         if config.api_version == APIVersion.V3:
             order_api = OrderAPIv3(access_token=access_token)
-            order_response = await order_api.place_order(order_data=order_data)
+            order_response = order_api.place_order(order_data=order_data)
             order_ids = {"order_id_v3": order_response["data"]["order_ids"][0]}
             logger.info(f"V3 order placed successfully: {order_ids}")
         else:
             order_api = OrderAPI(access_token=access_token)
-            order_response = await order_api.place_order(order_data=order_data)
+            order_response = order_api.place_order(order_data=order_data)
             order_ids = {"order_id": order_response["data"]["order_id"]}
             logger.info(f"V2 order placed successfully: {order_ids}")
         
@@ -181,7 +181,7 @@ def parse_args() -> argparse.Namespace:
     
     return args
 
-async def main():
+def main():
     """Main function to demonstrate the trading strategy."""
     try:
         # Parse command line arguments
@@ -222,7 +222,7 @@ async def main():
         
         if trade_details.transaction_type:
             # Uncomment to actually place orders
-            # await place_order(trade_details, config, access_token)
+            # place_order(trade_details, config, access_token)
             logger.info(f"Order placement skipped (commented out) - would use {config.api_version} API")
 
     except Exception as e:
@@ -230,5 +230,4 @@ async def main():
         raise
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
