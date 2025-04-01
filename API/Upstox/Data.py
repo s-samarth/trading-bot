@@ -251,6 +251,7 @@ class OrderData(Data):
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
 
+
 class PortfolioData(Data):
     """
     Class for Upstox API portfolio data operations.
