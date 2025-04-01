@@ -4,6 +4,7 @@ __pycache__/
 *.so
 *.egg-info/
 *.egg
+test_env
 
 # Environment variables and secrets
 .env
