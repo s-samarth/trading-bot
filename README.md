@@ -7,6 +7,8 @@ you can fetch the UPSTOX_TOTP_SECRET(click for key under the TOTP QR while enabl
 
 Refer to TradingStrategy/demo.py for now
 
+Clone this Repo and follow the below instructions
+
 ### Running Instructions
 1) Setup the environment for running
 ```bash
