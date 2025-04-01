@@ -52,10 +52,12 @@ class UpstoxAPIConfig(BaseModel):
     UPSTOX_API_KEY: str = "YOUR_UPSTOX_API_KEY"
     UPSTOX_API_SECRET: str = "YOUR_UPSTOX_API_SECRET"
     UPSTOX_REDIRECT_URI: str = "YOUR_UPSTOX_REDIRECT_URI"
-    UPSTOX_API_VERSION: str = "YOUR_UPSTOX_API_VERSION"    # Currently working is "2.0"
+    UPSTOX_MOBILE_NUMBER: str = "YOUR_UPSTOX_MOBILE_NUMBER"
+    UPSTOX_TOTP_SECRET: str = "YOUR_UPSTOX_TOTP_SECRET"
+    UPSTOX_MPIN: str = "YOUR_UPSTOX_MPIN"
     UPSTOX_POSTBACK_URL: Optional[str] = ""
     UPSTOX_SANDBOX_ACCESS_TOKEN: Optional[str] = ""
-    UPSTOX_POSTBACK_URL: Optional[str] = ""
+
 
 class AngelOneAPIConfig(BaseModel):
     """Angel One configuration class. 

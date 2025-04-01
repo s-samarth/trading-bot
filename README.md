@@ -1,6 +1,10 @@
 # trading-bot
 I Aim to make a completely automated trading bot which is going to make a lot of money.
 
+Currently Only Upstox API is fully functional and Up and Running.
+You will need to enable TOPT based Authentication in Upstox first and then
+you can fetch the UPSTOX_TOTP_SECRET(click for key under the TOTP QR while enabling)
+
 ### Running Instructions
 1) Setup the environment for running
 ```bash
