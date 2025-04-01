@@ -1,6 +1,6 @@
 import logging
 
-from Config import Config
+from .Config import Config
 
 # Set the logging level and the log file
 logging.basicConfig(

@@ -3,6 +3,8 @@ from pathlib import Path
 import json
 from pydantic import BaseModel
 from ChromeDrivers.ChromeDrivers import ChromeDrivers
+import logging
+from config.Logging import logging  # Import the configured logging instance
 
 
 class EnvironmentVariable(BaseModel):
@@ -26,7 +28,7 @@ class ChromeDriverConfig(BaseModel):
         """Initialize configuration from ChromeDrivers."""
         chrome_driver = ChromeDrivers()
         if not chrome_driver.cache_valid:
-            print("Initializing/Updating ChromeDriver...")
+            logging.info("Initializing/Updating ChromeDriver...")
             chrome_driver.refresh_cache()
         
         return cls(
@@ -250,9 +252,13 @@ class EnvironmentManager:
 
 def main():
     """Main entry point for environment setup."""
-    env_manager = EnvironmentManager()
-    env_manager.setup_env()
-    print("Environment variables have been updated in .env")
+    try:
+        env_manager = EnvironmentManager()
+        env_manager.setup_env()
+        logging.info("Environment variables have been updated in .env")
+    except Exception as e:
+        logging.error(f"Failed to setup environment: {str(e)}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":
