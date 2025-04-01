@@ -1,0 +1,17 @@
+[Unit]
+Description=Trading Bot Service
+After=network.target
+
+[Service]
+Type=simple
+User=trading
+Group=trading
+WorkingDirectory=/opt/trading-bot
+Environment=PYTHONPATH=/opt/trading-bot
+Environment=CONFIG_FILE=/opt/trading-bot/config/prod_config.json
+ExecStart=/opt/trading-bot/venv/bin/python -m TradingStrategy.main --config /opt/trading-bot/config/prod_config.json
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target 

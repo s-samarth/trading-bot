@@ -1,0 +1,34 @@
+{
+    "trading": {
+        "budget": 100000,
+        "symbols": ["IDEA", "HDFCBANK"],
+        "base_quantity": 2,
+        "update_interval": 60,
+        "strategy": "technical",
+        "buy_price": null,
+        "sell_price": null
+    },
+    "monitoring": {
+        "cpu_threshold": 80.0,
+        "memory_threshold": 80.0,
+        "api_latency_threshold": 1000.0,
+        "error_rate_threshold": 10,
+        "daily_loss_threshold": 0.05,
+        "drawdown_threshold": 0.15,
+        "volatility_threshold": 0.02
+    },
+    "email": {
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587,
+        "sender_email": "your-email@gmail.com",
+        "sender_password": "your-app-password",
+        "recipient_email": "your-email@gmail.com"
+    },
+    "database": {
+        "path": "/opt/trading-bot/data/trading.db"
+    },
+    "logging": {
+        "file": "/var/log/trading-bot/trading.log",
+        "level": "INFO"
+    }
+} 
