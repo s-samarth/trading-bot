@@ -1,10 +1,13 @@
 import os
+import sys
 import gzip
 import shutil
 import json
 from typing import Dict
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from Constants import Exchange
+from Config import Config
+from API.Upstox.Constants import Exchange
 
 def generate_instrument_token(trading_symbol: str, exchange: Exchange):
     """
@@ -49,11 +52,17 @@ class DataExtractor:
                  complete_data_upstox_path="UpstoxData/complete.json", 
                  nse_data_eq_path="UpstoxData/nse_eq.json", 
                  nse_trading_symbol_to_isin_path="UpstoxData/symbol_to_isin.json"):
-        self.gzip_file_path = gzip_file_path
-        self.output_file_path = output_file_path
-        self.complete_data_upstox_path = complete_data_upstox_path
-        self.nse_data_eq_path = nse_data_eq_path
-        self.nse_trading_symbol_to_isin_path = nse_trading_symbol_to_isin_path
+        self.current_dir = f"{Config.root_dir}/API/Upstox"
+        self.gzip_file_path = os.path.join(self.current_dir, gzip_file_path)
+        self.output_file_path = os.path.join(self.current_dir, output_file_path)
+        self.complete_data_upstox_path = os.path.join(self.current_dir, complete_data_upstox_path)
+        self.nse_data_eq_path = os.path.join(self.current_dir, nse_data_eq_path)
+        self.nse_trading_symbol_to_isin_path = os.path.join(self.current_dir, nse_trading_symbol_to_isin_path)
+        # self.gzip_file_path = gzip_file_path
+        # self.output_file_path = output_file_path
+        # self.complete_data_upstox_path = complete_data_upstox_path
+        # self.nse_data_eq_path = nse_data_eq_path
+        # self.nse_trading_symbol_to_isin_path = nse_trading_symbol_to_isin_path
         
     def load_complete_upstox_data(self) -> dict:
         """

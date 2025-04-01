@@ -15,6 +15,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from Config import Config
 from ChromeDrivers.ChromeDrivers import ChromeDrivers
 
 
@@ -27,6 +28,8 @@ class Login:
     def __init__(self, login_mode=LoginMode.AUTOMATED):
         # Load environment variables
         load_dotenv()
+        self.current_dir = f"{Config.root_dir}/API/Upstox"
+        self.access_token_file_path = os.path.join(self.current_dir, "access_token.txt")
         self.api_key = os.getenv("UPSTOX_API_KEY")
         self.api_secret = os.getenv("UPSTOX_API_SECRET")
         self.base_auth_url = "https://api.upstox.com/v2/login/authorization/dialog"
@@ -188,13 +191,13 @@ class Login:
         return access_token
     
     def save_access_token(self, access_token: str):
-        with open("access_token.txt", "w") as file:
+        with open(self.access_token_file_path, "w") as file:
             file.write(access_token)
         print("Access token saved successfully")
 
     def get_access_token(self):
         try:
-            with open("access_token.txt", "r") as file:
+            with open(self.access_token_file_path, "r") as file:
                 access_token = file.read().strip()
             print("Access token retrieved from file.")
             return access_token
@@ -232,7 +235,8 @@ class Login:
 
 class SandboxLogin:
     def __init__(self):
-        self.sandbox_access_token_file_path = "sandbox_access_token.txt"
+        self.current_dir = f"{Config.root_dir}/API/Upstox"
+        self.sandbox_access_token_file_path = os.path.join(self.current_dir, "sandbox_access_token.txt")
 
     def login(self):
         sandbox_access_token = self.get_sandbox_access_token()
@@ -283,6 +287,7 @@ class SandboxLogin:
 
 
 if __name__ == "__main__":
+    print(f"Root: {Config.root_dir}")
     upstox_login = Login()
     access_token = upstox_login.login()
     # upstox_login.logout(access_token)
