@@ -3,9 +3,14 @@ import logging
 from Config import Config
 
 # Set the logging level and the log file
-logging.basicConfig(level=Config.logging_level, filename=f"{Config.logs_dir}/app.log", filemode="w", 
-                    encoding="utf-8", format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])', 
-                    datefmt='%d/%m/%Y %I:%M:%S %p')
+logging.basicConfig(
+    level=Config.logging_level,
+    filename=f"{Config.logs_dir}/app.log",
+    filemode="w",
+    encoding="utf-8",
+    format="%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])",
+    datefmt="%d/%m/%Y %I:%M:%S %p",
+)
 
 # Import the other modules after setting the logging configuration so that they can use the same configuration
 

@@ -1,6 +1,7 @@
 import os
 import sys
 from pprint import pprint
+
 # Add the parent directory to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
@@ -33,9 +34,8 @@ if __name__ == "__main__":
 
     # Buying and selling stocks
     trade_executor = TradeExecutor(kite=kite)
-    place_order_data = PlaceOrderData(tradingsymbol="IDEA", transaction_type="BUY", quantity=1)
+    place_order_data = PlaceOrderData(
+        tradingsymbol="IDEA", transaction_type="BUY", quantity=1
+    )
     buy_order = trade_executor.place_order(order_params=place_order_data)
     print(f"Buy Order: {buy_order}")
-
-
-    

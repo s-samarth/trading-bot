@@ -1,5 +1,6 @@
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import requests
@@ -8,6 +9,7 @@ from pprint import pprint
 from kiteconnect import KiteConnect
 
 from API.Zerodha.ZerodhaLogin import Login
+
 
 class Data:
     def __init__(self, kite: KiteConnect):
@@ -26,7 +28,7 @@ class Data:
         except Exception as e:
             print(f"Error fetching profile: {e}")
             return None
-        
+
     def get_positions(self):
         """
         Get the positions of the user.
@@ -37,7 +39,7 @@ class Data:
         except Exception as e:
             print(f"Error fetching positions: {e}")
             return None
-        
+
     def get_holdings(self):
         """
         Get the holdings of the user.
@@ -48,7 +50,7 @@ class Data:
         except Exception as e:
             print(f"Error fetching holdings: {e}")
             return None
-        
+
     def get_gtts(self):
         """
         Get all GTTS (Good Till Triggered) orders.
@@ -60,31 +62,33 @@ class Data:
         except Exception as e:
             print(f"Error fetching GTTS orders: {e}")
             return None
-        
+
     def _generate_instrument(self, tradingsymbol: str, exchange: str):
         """
         Generate the instrument token for the given trading symbol and exchange.
         """
         return f"{exchange}:{tradingsymbol}"
-    
+
     def get_ltp(self, instrument: str, exchange: str):
         """
         Get the last traded price (LTP) for the given instrument.
         """
         try:
-            instrument_token = self._generate_instrument(tradingsymbol=instrument, exchange=exchange)
+            instrument_token = self._generate_instrument(
+                tradingsymbol=instrument, exchange=exchange
+            )
             ltp = self.kite.ltp([instrument_token])
             return ltp
         except Exception as e:
             print(f"Error fetching LTP: {e}")
             return None
-        
+
     def get_nse_ltp(self, symbol: str):
         """
         Fetches the latest LTP (Last Traded Price) of a stock from NSE.
         """
         url = f"https://www.nseindia.com/api/quote-equity?symbol={symbol.upper()}"
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
             "Accept": "application/json, text/javascript, */*; q=0.01",
@@ -92,7 +96,7 @@ class Data:
             "Accept-Encoding": "gzip, deflate, br",
             "Referer": f"https://www.nseindia.com/get-quotes/equity?symbol={symbol.upper()}",
             "Connection": "keep-alive",
-            "DNT": "1"
+            "DNT": "1",
         }
 
         # Create a session
@@ -106,11 +110,11 @@ class Data:
             # 🔹 Step 2: Fetch stock data
             response = session.get(url, timeout=5)
             response.raise_for_status()  # Raises an error for bad response
-            
+
             # 🔹 Step 3: Extract LTP
             data = response.json()
             ltp = data["priceInfo"]["lastPrice"]
-            
+
             return float(ltp)
 
         except requests.exceptions.RequestException as e:
@@ -118,7 +122,7 @@ class Data:
             return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Example usage
     load_dotenv()
     kite = KiteConnect(api_key=os.getenv("ZERODHA_API_KEY"))
@@ -127,13 +131,13 @@ if __name__ == '__main__':
     kite = zerodha_login.login()
     if kite is not None:
         data = Data(kite=kite)
-        
+
         profile = data.get_profile()
         pprint(f"Profile: {profile}")
-        
+
         positions = data.get_positions()
         pprint(f"Positions: {positions}")
-        
+
         holdings = data.get_holdings()
         pprint(f"Holdings: {holdings}")
 

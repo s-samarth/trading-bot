@@ -1,6 +1,7 @@
 import os
 import sys
 from typing import Dict
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from TradingStrategy.Constants import TradingSymbol
@@ -12,7 +13,14 @@ from API.Upstox.Data import MarketQuoteData
 from API.Upstox.Constants import Segment
 from API.Upstox.TradeExecutor import OrderAPI, OrderAPIv3, PlaceOrderData
 
-def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price: float, sell_price: float, quantity: int) -> TradingStrategyData:
+
+def simple_trading_strategy(
+    trading_symbol: TradingSymbol,
+    ltp: float,
+    buy_price: float,
+    sell_price: float,
+    quantity: int,
+) -> TradingStrategyData:
     """
     A simple trading strategy which buys is if LTP is less than buy price and sells if LTP is greater than sell price.
     Args:
@@ -39,7 +47,7 @@ def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price
         buy_price=buy_price,
         sell_price=sell_price,
         quantity=quantity,
-        transaction_type=None
+        transaction_type=None,
     )
 
     # Check if the LTP is less than the buy price
@@ -55,6 +63,7 @@ def simple_trading_strategy(trading_symbol: TradingSymbol, ltp: float, buy_price
     # Return the trade details
     return trade_details
 
+
 def place_order(trade_details: TradingStrategyData, access_token: str = None):
     """
     Places an order based on the trade details.
@@ -67,11 +76,12 @@ def place_order(trade_details: TradingStrategyData, access_token: str = None):
         order_api = OrderAPI(access_token=access_token)
         order_api_v3 = OrderAPIv3(access_token=access_token)
 
-        order_data = PlaceOrderData(trading_symbol=trade_details.trading_symbol, 
-                                    transaction_type=trade_details.transaction_type,
-                                    quantity=trade_details.quantity,
-                                    exchange=Mappings.exchange(BaseExchange.NSE),
-                                    )
+        order_data = PlaceOrderData(
+            trading_symbol=trade_details.trading_symbol,
+            transaction_type=trade_details.transaction_type,
+            quantity=trade_details.quantity,
+            exchange=Mappings.exchange(BaseExchange.NSE),
+        )
 
         order_response = order_api.place_order(order_data=order_data)
         print(f"Order response: {order_response}")
@@ -86,7 +96,7 @@ def place_order(trade_details: TradingStrategyData, access_token: str = None):
     else:
         print("No trade action taken.")
         return None
-    
+
 
 if __name__ == "__main__":
     # Initialize UpstoxLogin
@@ -101,7 +111,7 @@ if __name__ == "__main__":
     market_quote = MarketQuoteData(access_token=access_token)
     ltp_data = market_quote.get_ltp(trading_symbol=trading_symbol, exchange=exchange)
     print(f"LTP of {TradingSymbol.IDEA}: {ltp_data}")
-    
+
     key = f"{exchange}_{segment}:{trading_symbol}"
     ltp = ltp_data["data"][key]["last_price"]
 
@@ -109,7 +119,9 @@ if __name__ == "__main__":
     buy_price = 7
     sell_price = 10
     quantity = 2
-    trade_details = simple_trading_strategy(trading_symbol, ltp, buy_price, sell_price, quantity)
+    trade_details = simple_trading_strategy(
+        trading_symbol, ltp, buy_price, sell_price, quantity
+    )
     print(f"Trade details: {trade_details}")
     # order_response = place_order(trade_details, sandbox_access_token)
 
@@ -117,7 +129,9 @@ if __name__ == "__main__":
     buy_price = 5
     sell_price = 10
     quantity = 2
-    trade_details = simple_trading_strategy(trading_symbol, ltp, buy_price, sell_price, quantity)
+    trade_details = simple_trading_strategy(
+        trading_symbol, ltp, buy_price, sell_price, quantity
+    )
     print(f"Trade details: {trade_details}")
     # order_response = place_order(trade_details, sandbox_access_token)
 
@@ -125,6 +139,8 @@ if __name__ == "__main__":
     buy_price = 5
     sell_price = 6
     quantity = 2
-    trade_details = simple_trading_strategy(trading_symbol, ltp, buy_price, sell_price, quantity)
+    trade_details = simple_trading_strategy(
+        trading_symbol, ltp, buy_price, sell_price, quantity
+    )
     print(f"Trade details: {trade_details}")
     # order_response = place_order(trade_details, sandbox_access_token)

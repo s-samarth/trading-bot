@@ -12,6 +12,7 @@ class ChromeDrivers:
     """
     A class to manage the Chrome WebDriver instance with caching.
     """
+
     def __init__(self):
         load_dotenv()
         self.driver_path = os.getenv("CHROMEDRIVER_PATH")
@@ -41,8 +42,10 @@ class ChromeDrivers:
             self.refresh_date = datetime.now().strftime("%Y-%m-%d")
             self._write_env_variable("CHROMEDRIVER_PATH", self.driver_path)
             self._write_env_variable("CHROMEDRIVER_REFRESH_DATE", self.refresh_date)
-            print(f"✅ ChromeDriver refreshed and cached at: {driver_path} on {self.refresh_date}")
-            
+            print(
+                f"✅ ChromeDriver refreshed and cached at: {driver_path} on {self.refresh_date}"
+            )
+
         except Exception as e:
             print(f"❌ Error refreshing ChromeDriver: {e}")
 
@@ -67,7 +70,7 @@ class ChromeDrivers:
         try:
             # Set up Chrome options
             options = self.set_options()
-            
+
             if not self.cache_valid:
                 print("Cache is invalid. Refreshing ChromeDriver.")
                 self.refresh_cache()
@@ -80,7 +83,7 @@ class ChromeDrivers:
         except Exception as e:
             print(f"❌ Error initializing ChromeDriver: {e}")
             return None
-        
+
     def _write_env_variable(self, key, value, env_file="../.env"):
         """Writes or updates a key-value pair in the .env file."""
         lines = []
@@ -113,7 +116,10 @@ class ChromeDrivers:
         elapsed_time = end_time - start_time
         duration_minutes = elapsed_time // 60
         remaining_seconds = elapsed_time % 60
-        print(f"Installation took {int(duration_minutes)} min {remaining_seconds:.2f} seconds.")
+        print(
+            f"Installation took {int(duration_minutes)} min {remaining_seconds:.2f} seconds."
+        )
+
 
 # Example Usage:
 if __name__ == "__main__":

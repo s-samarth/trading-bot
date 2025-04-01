@@ -3,25 +3,27 @@ from pydantic import BaseModel
 
 
 class EnvironmentVariable(BaseModel):
-    KEY : str
-    VALUE : str
+    KEY: str
+    VALUE: str
 
 
 class ChromeDriverConfig(BaseModel):
-    """ChromeDriver configuration class. 
+    """ChromeDriver configuration class.
     This class is used to store the configuration for the ChromeDriver.
     Populate it with your own values. Remove any keys you don't need.
     """
+
     # ChromeDriver configuration
     CHROME_DRIVER_PATH: Optional[str] = ""
     CHROME_DRIVER_REFRESH_DATE: Optional[str] = ""
 
 
 class TelegramBotConfig(BaseModel):
-    """Telegram Bot configuration class. 
+    """Telegram Bot configuration class.
     This class is used to store the configuration for the Telegram Bot.
     Populate it with your own values. Remove any keys you don't need.
     """
+
     # Telegram Bot configuration
     TELEGRAM_BOT_TOKEN: str = "YOUR_TELEGRAM_BOT_TOKEN"
     TELEGRAM_CHAT_ID: str = "YOUR_TELEGRAM_CHAT_ID"
@@ -29,25 +31,27 @@ class TelegramBotConfig(BaseModel):
 
 
 class ZerodhaAPIConfig(BaseModel):
-    """Zerodha configuration class. 
+    """Zerodha configuration class.
     This class is used to store the configuration for the Zerodha API.
     Populate it with your own values. Remove any keys you don't need.
     """
+
     # Zerodha API configuration
     ZERODHA_USER_ID: str = "YOUR_ZERODHA_USER_ID"
     ZERODHA_PASSWORD: str = "YOUR_ZERODHA_PASSWORD"
     ZERODHA_API_KEY: str = "YOUR_ZERODHA_API_KEY"
     ZERODHA_API_SECRET: str = "YOUR_ZERODHA_API_SECRET"
     ZERODHA_TOTP_SECRET: str = "YOUR_ZERODHA_TOTP_SECRET"
-    ZERODHA_REDIRECT_URI : str = "YOUR_ZERODHA_REDIRECT_URI"
+    ZERODHA_REDIRECT_URI: str = "YOUR_ZERODHA_REDIRECT_URI"
     ZERODHA_POSTBACK_URL: Optional[str] = ""
 
 
 class UpstoxAPIConfig(BaseModel):
-    """Upstox configuration class. 
+    """Upstox configuration class.
     This class is used to store the configuration for the Upstox API.
     Populate it with your own values. Remove any keys you don't need.
     """
+
     # Upstox API configuration
     UPSTOX_API_KEY: str = "YOUR_UPSTOX_API_KEY"
     UPSTOX_API_SECRET: str = "YOUR_UPSTOX_API_SECRET"
@@ -60,10 +64,11 @@ class UpstoxAPIConfig(BaseModel):
 
 
 class AngelOneAPIConfig(BaseModel):
-    """Angel One configuration class. 
+    """Angel One configuration class.
     This class is used to store the configuration for the Angel One API.
     Populate it with your own values. Remove any keys you don't need.
     """
+
     # AngelOne API configuration
     ANGELONE_CLIENT_ID: str = "YOUR_ANGELONE_CLIENT_ID"
     ANGELONE_TRADING_API_KEY: str = "YOUR_ANGELONE_TRADING_API_KEY"
@@ -73,13 +78,14 @@ class AngelOneAPIConfig(BaseModel):
     ANGELONE_TOTP_SECRET: str = "YOUR_ANGELONE_TOTP_SECRET"
     ANGELONE_REDIRECT_URI: str = "YOUR_ANGELONE_REDIRECT_URI"
     ANGELONE_POSTBACK_URL: Optional[str] = ""
-    
+
 
 class SetupEnv:
-    """SetupEnv class. 
+    """SetupEnv class.
     This class is used to set up the environment variables for the application.
     It reads the configuration from the config file and writes it to the .env file.
     """
+
     def __init__(self):
         """
         Initializes the SetupEnv class.
@@ -96,7 +102,7 @@ class SetupEnv:
             self.telegram_bot_config,
             self.zerodha_api_config,
             self.upstox_api_config,
-            self.angel_one_api_config
+            self.angel_one_api_config,
         ]
 
     def setup_env(self, env_file=".env"):
@@ -124,7 +130,9 @@ class SetupEnv:
             env_variables.append(env_variable)
         return env_variables
 
-    def write_env_variables(self, env_variables: List[EnvironmentVariable], env_file=".env"):
+    def write_env_variables(
+        self, env_variables: List[EnvironmentVariable], env_file=".env"
+    ):
         """Writes or updates a key-value pair in the .env file."""
         lines = []
         updated = False
@@ -160,8 +168,3 @@ if __name__ == "__main__":
     # Example usage
     SetupEnv().setup_env()
     print("Environment variables written to .env.demo")
-    
-
-    
-
-    

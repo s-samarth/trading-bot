@@ -19,7 +19,7 @@ class MessageHandling:
 
         print(f"User: {update.message.chat.id} in ({message_tyoe}): {text}")
 
-        if message_tyoe == 'group':
+        if message_tyoe == "group":
             if bot_username in text:
                 new_text = text.replace(bot_username, "").strip()
                 response: str = ResponseHandling.handle_response(new_text)

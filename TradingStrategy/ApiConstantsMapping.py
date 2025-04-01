@@ -1,19 +1,24 @@
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 import TradingStrategy.Constants as BaseConstants
 import API.Upstox.Constants as UpstoxConstants
 
+
 class UpstoxConstantsMapping:
     """
     This class is used to map Upstox constants to Base constants.
     """
+
     def __init__(self):
         pass
 
     @classmethod
-    def transaction_type(cls, transaction_type: BaseConstants.BaseTransactionType) -> UpstoxConstants.TransactionType:
+    def transaction_type(
+        cls, transaction_type: BaseConstants.BaseTransactionType
+    ) -> UpstoxConstants.TransactionType:
         """
         Maps the transaction type from Base constants to Upstox constants.
         Args:
@@ -22,7 +27,7 @@ class UpstoxConstantsMapping:
             TransactionType: The mapped transaction type from Upstox constants.
         """
         return getattr(UpstoxConstants.TransactionType, transaction_type.name)
-    
+
     @classmethod
     def exchange(cls, exchange: BaseConstants.BaseExchange) -> UpstoxConstants.Exchange:
         """
@@ -33,9 +38,11 @@ class UpstoxConstantsMapping:
             Exchange: The mapped exchange from Upstox constants.
         """
         return getattr(UpstoxConstants.Exchange, exchange.name)
-    
+
     @classmethod
-    def product_type(cls, product_type: BaseConstants.BaseProductType) -> UpstoxConstants.ProductType:
+    def product_type(
+        cls, product_type: BaseConstants.BaseProductType
+    ) -> UpstoxConstants.ProductType:
         """
         Maps the product type from Base constants to Upstox constants.
         Args:
@@ -44,9 +51,11 @@ class UpstoxConstantsMapping:
             ProductType: The mapped product type from Upstox constants.
         """
         return getattr(UpstoxConstants.ProductType, product_type.name)
-    
+
     @classmethod
-    def order_type(cls, order_type: BaseConstants.BaseOrderType) -> UpstoxConstants.OrderType:
+    def order_type(
+        cls, order_type: BaseConstants.BaseOrderType
+    ) -> UpstoxConstants.OrderType:
         """
         Maps the order type from Base constants to Upstox constants.
         Args:
@@ -55,7 +64,7 @@ class UpstoxConstantsMapping:
             OrderType: The mapped order type from Upstox constants.
         """
         return getattr(UpstoxConstants.OrderType, order_type.name)
-    
+
 
 if __name__ == "__main__":
     # Example usage for transaction type
