@@ -101,13 +101,13 @@ check_database() {
 check_resources() {
     local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d. -f1)
     local mem_usage=$(free | grep Mem | awk '{print $3/$2 * 100.0}' | cut -d. -f1)
-    
+
     if [ "$cpu_usage" -gt 80 ]; then
         print_warning "High CPU usage: ${cpu_usage}%"
     else
         print_status "CPU usage: ${cpu_usage}%"
     fi
-    
+
     if [ "$mem_usage" -gt 80 ]; then
         print_warning "High memory usage: ${mem_usage}%"
     else
@@ -120,17 +120,17 @@ main() {
     echo "=== Trading Bot System Health Check ==="
     echo "Time: $(date)"
     echo "----------------------------------------"
-    
+
     check_service
     check_disk_space
     check_log_size
     check_recent_errors
     check_database
     check_resources
-    
+
     echo "----------------------------------------"
     echo "Health check completed"
 }
 
 # Run main function
-main 
+main

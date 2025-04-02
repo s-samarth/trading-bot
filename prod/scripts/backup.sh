@@ -82,4 +82,4 @@ fi
 
 print_status "Backup completed successfully!"
 print_status "Backup location: $BACKUP_PATH.tar.gz"
-print_status "Backups are retained for $RETENTION_DAYS days" 
+print_status "Backups are retained for $RETENTION_DAYS days"

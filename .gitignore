@@ -15,6 +15,7 @@ config/secrets/*
 .idea/
 .vscode/
 *.swp
+.cursor/
 
 # Project specific
 *access_token.txt

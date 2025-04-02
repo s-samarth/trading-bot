@@ -114,4 +114,4 @@ fi
 print_status "Deployment completed successfully!"
 print_warning "Please edit $INSTALL_DIR/config/prod_config.json with your settings"
 print_status "You can check the service status with: systemctl status trading-bot"
-print_status "View logs with: journalctl -u trading-bot -f" 
+print_status "View logs with: journalctl -u trading-bot -f"

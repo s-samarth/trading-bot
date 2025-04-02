@@ -50,9 +50,6 @@ class UpstoxConstantsMapping:
     def transaction_type(
         cls, transaction_type: BaseConstants.BaseTransactionType
     ) -> UpstoxConstants.TransactionType:
-    def transaction_type(
-        cls, transaction_type: BaseConstants.BaseTransactionType
-    ) -> UpstoxConstants.TransactionType:
         """
         Maps the transaction type from Base constants to Upstox constants.
 
@@ -93,9 +90,6 @@ class UpstoxConstantsMapping:
     def product_type(
         cls, product_type: BaseConstants.BaseProductType
     ) -> UpstoxConstants.ProductType:
-    def product_type(
-        cls, product_type: BaseConstants.BaseProductType
-    ) -> UpstoxConstants.ProductType:
         """
         Maps the product type from Base constants to Upstox constants.
 
@@ -115,9 +109,6 @@ class UpstoxConstantsMapping:
         )
 
     @classmethod
-    def order_type(
-        cls, order_type: BaseConstants.BaseOrderType
-    ) -> UpstoxConstants.OrderType:
     def order_type(
         cls, order_type: BaseConstants.BaseOrderType
     ) -> UpstoxConstants.OrderType:

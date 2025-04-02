@@ -41,7 +41,6 @@ Edit `config/secrets/upstox.json`:
 ```
 
 3. Run setup:
-```bash
 python SetupEnv.py
 ```
 ```
@@ -71,4 +70,3 @@ python demo.py
 ## License
 
 MIT License - see LICENSE file for details
-
