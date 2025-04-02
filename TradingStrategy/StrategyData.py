@@ -1,14 +1,20 @@
 from typing import Optional
 from decimal import Decimal
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
-from TradingStrategy.Constants import TradingSymbol, BaseExchange, BaseTransactionType
+from TradingStrategy.Constants import (
+    TradingSymbol,
+    BaseExchange,
+    BaseTransactionType,
+    TradeStatus,
+    BaseOrderStatus,
+    Broker,
+)
 
 
-
-class TradingStrategyData(BaseModel):
+class BaseStrategyInput(BaseModel):
     """
-    This class is used to define the data structure for a trading strategy.
+    This class is used to define the base data structure for a trading strategy.
     """
 
     trading_symbol: TradingSymbol = Field(
@@ -17,33 +23,64 @@ class TradingStrategyData(BaseModel):
     exchange: BaseExchange = Field(
         default=BaseExchange.NSE, description="The exchange where the stock is traded."
     )
-    ltp: Decimal = Field(..., description="The last traded price of the stock.")
-    buy_price: Decimal = Field(..., description="The price at which to buy the stock.")
-    sell_price: Decimal = Field(
-        ..., description="The price at which to sell the stock."
+
+
+class BaseStrategyOutput(BaseModel):
+    """
+    This class is used to define the output data structure for a trading strategy.
+    """
+
+    trading_symbol: TradingSymbol = Field(
+        ..., description="The trading symbol for the stock."
     )
-    quantity: int = Field(..., description="The number of shares to trade.")
+    exchange: BaseExchange = Field(
+        default=BaseExchange.NSE, description="The exchange where the stock is traded."
+    )
+    trade_status: TradeStatus = Field(
+        ..., description="The status of the trade (PROFIT/LOSS/HOLD/NOT_TRIGGERED)."
+    )
+    broker: Broker = Field(..., description="The broker used for the trade.")
+    order_status: Optional[BaseOrderStatus] = Field(
+        ..., description="The status of the order (OPEN/CLOSED/etc)."
+    )
     transaction_type: Optional[BaseTransactionType] = Field(
-        default=None, description="The type of transaction (BUY/SELL)."
+        ..., description="The type of transaction (BUY/SELL)."
+    )
+    transaction_price: Optional[Decimal] = Field(
+        ..., description="The price at which the transaction was executed."
+    )
+    order_id: Optional[str] = Field(
+        None, description="The ID of the order placed for the trade."
+    )
+    information: Optional[str] = Field(
+        None, description="Additional information about the trade."
     )
 
-    @field_validator("ltp", "buy_price", "sell_price")
-    @classmethod
-    def validate_prices(cls, v):
-        if v <= 0:
-            raise ValueError("Prices must be positive numbers")
-        return v
 
-    @field_validator("quantity")
-    @classmethod
-    def validate_quantity(cls, v):
-        if v <= 0:
-            raise ValueError("Quantity must be a positive number")
-        return v
+class BaseStrategyParams(BaseModel):
+    """
+    This class is used to define the configuration for a trading strategy.
+    """
 
-    @field_validator("sell_price")
-    @classmethod
-    def validate_sell_price(cls, v, info):
-        if "buy_price" in info.data and v <= info.data["buy_price"]:
-            raise ValueError("Sell price must be greater than buy price")
-        return v
+    target_percent: Decimal = Field(..., description="Target percentage for profit.")
+    stop_loss_percent: Decimal = Field(
+        ..., description="Stop loss percentage for loss protection."
+    )
+    tolerance_percent: Decimal = Field(
+        default=0.1,
+        description="Tolerance level at which to place orders. This is the percentage of the buy/sell price.",
+    )
+
+
+class BaseStrategyTradeSignal(BaseModel):
+    """
+    This class is used to define the trading signal for a strategy.
+    """
+
+    transaction_type: BaseTransactionType = Field(
+        ..., description="The type of transaction (BUY/SELL)."
+    )
+    price: Decimal = Field(..., description="The price at which to execute the trade.")
+    trade_status: TradeStatus = Field(
+        ..., description="The status of the trade (PROFIT/LOSS/HOLD/NOT_TRIGGERED)."
+    )
