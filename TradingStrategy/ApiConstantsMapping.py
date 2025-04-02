@@ -65,6 +65,30 @@ class UpstoxConstantsMapping:
         """
         return getattr(UpstoxConstants.OrderType, order_type.name)
 
+    @classmethod
+    def segment(cls, segment: BaseConstants.BaseSegment) -> UpstoxConstants.Segment:
+        """
+        Maps the segment from Base constants to Upstox constants.
+        Args:
+            segment (BaseSegment): The segment from Base constants.
+        Returns:
+            Segment: The mapped segment from Upstox constants.
+        """
+        return getattr(UpstoxConstants.Segment, segment.name)
+
+    @classmethod
+    def order_status(
+        cls, order_status: BaseConstants.BaseOrderStatus
+    ) -> UpstoxConstants.OrderStatus:
+        """
+        Maps the order status from Base constants to Upstox constants.
+        Args:
+            order_status (BaseOrderStatus): The order status from Base constants.
+        Returns:
+            OrderStatus: The mapped order status from Upstox constants.
+        """
+        return getattr(UpstoxConstants.OrderStatus, order_status.name)
+
 
 if __name__ == "__main__":
     # Example usage for transaction type
@@ -86,3 +110,13 @@ if __name__ == "__main__":
     order_type = BaseConstants.BaseOrderType.MARKET
     mapped_order_type = UpstoxConstantsMapping.order_type(order_type)
     print(f"Mapped Order Type: {mapped_order_type}")
+
+    # Example usage for segment
+    segment = BaseConstants.BaseSegment.EQUITY
+    mapped_segment = UpstoxConstantsMapping.segment(segment)
+    print(f"Mapped Segment: {mapped_segment}")
+
+    # Example usage for order status
+    order_status = BaseConstants.BaseOrderStatus.OPEN
+    mapped_order_status = UpstoxConstantsMapping.order_status(order_status)
+    print(f"Mapped Order Status: {mapped_order_status}")

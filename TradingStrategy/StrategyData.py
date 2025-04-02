@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 from decimal import Decimal
 from pydantic import BaseModel, Field
 
@@ -9,6 +9,10 @@ from TradingStrategy.Constants import (
     TradeStatus,
     BaseOrderStatus,
     Broker,
+    BaseProductType,
+    ExecutionStatus,
+    BaseSegment,
+    BaseOrderType,
 )
 
 
@@ -22,6 +26,17 @@ class BaseStrategyInput(BaseModel):
     )
     exchange: BaseExchange = Field(
         default=BaseExchange.NSE, description="The exchange where the stock is traded."
+    )
+    product_type: BaseProductType = Field(
+        default=BaseProductType.DELIVERY,
+        description="The type of product (INTRADAY/DELIVERY/etc).",
+    )
+    segment: BaseSegment = Field(
+        default=BaseSegment.EQUITY,
+        description="The segment of the market (EQUITY/COMMODITY/etc).",
+    )
+    order_type: BaseOrderType = Field(
+        default=BaseOrderType.LIMIT, description="The type of order (MARKET/LIMIT/etc)."
     )
 
 
@@ -42,6 +57,9 @@ class BaseStrategyOutput(BaseModel):
     broker: Broker = Field(..., description="The broker used for the trade.")
     order_status: Optional[BaseOrderStatus] = Field(
         ..., description="The status of the order (OPEN/CLOSED/etc)."
+    )
+    execution_status: Optional[ExecutionStatus] = Field(
+        None, description="The status of the execution (SUCCESS/FAILURE/etc)."
     )
     transaction_type: Optional[BaseTransactionType] = Field(
         ..., description="The type of transaction (BUY/SELL)."

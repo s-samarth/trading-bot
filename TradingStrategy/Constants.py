@@ -83,6 +83,29 @@ class BaseExchange(StrEnum):
         return {exchange.value: exchange.description() for exchange in cls}
 
 
+class BaseSegment(StrEnum):
+    EQUITY = "EQUITY"
+    FUTUREOPTION = "FUTUREOPTION"
+    COMMODITY = "COMMODITY"
+    CURRENCYDERIVATIVE = "CURRENCYDERIVATIVE"
+
+    def description(self) -> str:
+        descriptions = {
+            "EQUITY": "Represents equity trading.",
+            "FUTUREOPTION": "Represents future and options trading.",
+            "COMMODITY": "Represents commodity trading.",
+            "CURRENCYDERIVATIVE": "Represents currency derivative trading.",
+        }
+        return descriptions.get(self.value, "Unknown Segment")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all segment descriptions.
+        """
+        return {segment.value: segment.description() for segment in cls}
+
+
 class BaseTransactionType(StrEnum):
     BUY = "BUY"
     SELL = "SELL"
@@ -174,3 +197,60 @@ class BaseOrderStatus(StrEnum):
         Returns a dictionary of all order status descriptions.
         """
         return {status.value: status.description() for status in cls}
+
+
+class ExectionFrequencyMode(StrEnum):
+    CONSTANT = "constant"
+    DYNAMIC = "dynamic"
+
+    def description(self) -> str:
+        descriptions = {
+            "constant": "Constant execution frequency.",
+            "dynamic": "Dynamic execution frequency based LTP and other factors.",
+        }
+        return descriptions.get(self.value, "Unknown Execution Frequency Mode")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all execution frequency mode descriptions.
+        """
+        return {mode.value: mode.description() for mode in cls}
+
+
+class ExecutionStatus(StrEnum):
+    SUCCESS = "SUCCESS"
+    FAILURE = "FAILURE"
+    PENDING = "PENDING"
+
+    def description(self) -> str:
+        descriptions = {
+            "SUCCESS": "Execution was successful.",
+            "FAILURE": "Execution failed.",
+            "PENDING": "Execution is pending.",
+        }
+        return descriptions.get(self.value, "Unknown Execution Status")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all execution status descriptions.
+        """
+        return {status.value: status.description() for status in cls}
+
+
+class StrategyName(StrEnum):
+    MOCK_STRATEGY = "MockStrategy"
+
+    def description(self) -> str:
+        descriptions = {
+            "MockStrategy": "A mock trading strategy for demonstration purposes.",
+        }
+        return descriptions.get(self.value, "Unknown Strategy Name")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all strategy name descriptions.
+        """
+        return {strategy.value: strategy.description() for strategy in cls}
