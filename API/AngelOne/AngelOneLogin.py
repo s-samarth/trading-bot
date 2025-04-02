@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from SmartApi import SmartConnect
 
 
-
 class TradingLogin:
     def __init__(self):
         load_dotenv()
@@ -18,7 +17,7 @@ class TradingLogin:
     def generate_totp(self):
         totp = pyotp.TOTP(self.totp_secret).now()
         return totp
-    
+
     def generate_tokens(self):
         # Generate TOTP
         totp = self.generate_totp()
@@ -33,7 +32,7 @@ class TradingLogin:
         refresh_token = login_response["data"]["refreshToken"]
 
         return access_token, refresh_token
-    
+
     def save_tokens(self, access_token, refresh_token):
         # Save tokens securely
         with open("tokens.json", "w") as f:
@@ -55,7 +54,7 @@ class TradingLogin:
         else:
             self.access_token, self.refresh_token = self.generate_tokens()
             self.save_tokens(self.access_token, self.refresh_token)
-        
+
     def login(self):
         smart_api = SmartConnect(api_key=self.api_key)
         # Load tokens

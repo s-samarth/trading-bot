@@ -1,7 +1,8 @@
 from enum import StrEnum
 
+
 class Exchange(StrEnum):
-    NSE = "NSE" 
+    NSE = "NSE"
     BSE = "BSE"
     NFO = "NFO"
     BFO = "BFO"
@@ -19,17 +20,17 @@ class Exchange(StrEnum):
             "CDS": "Currency derivatives segment for forex futures and options.",
             "BCD": "Commodity derivatives trading on the Bombay Stock Exchange.",
             "NSCOM": "Commodity derivatives trading on National Stock Exchange.",
-            "MCX": "Commodity futures trading on the Multi Commodity Exchange."
+            "MCX": "Commodity futures trading on the Multi Commodity Exchange.",
         }
         return self.descriptions.get(self.value, "Unknown Exchange")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
         Returns a dictionary of all exchange descriptions.
         """
         return {exchange.value: exchange.description() for exchange in cls}
-    
+
 
 class TransactionType(StrEnum):
     BUY = "BUY"
@@ -38,17 +39,17 @@ class TransactionType(StrEnum):
     def description(self) -> str:
         descriptions = {
             "BUY": "Indicates a purchase of securities.",
-            "SELL": "Indicates a sale of securities."
+            "SELL": "Indicates a sale of securities.",
         }
         return descriptions.get(self.value, "Unknown Transaction Type")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
         Returns a dictionary of all transaction type descriptions.
         """
         return {transaction.value: transaction.description() for transaction in cls}
-    
+
 
 class ProductType(StrEnum):
     INTRADAY = "I"
@@ -61,17 +62,17 @@ class ProductType(StrEnum):
             "I": "Intraday trading where positions are squared off within the same trading day.",
             "D": "Delivery trading where securities are bought or sold for delivery.",
             "CO": "Intraday trading order that combines a market or limit order with a compulsory stop-loss order",
-            "MTF": "Allows investors to buy stocks by paying only a fraction of the total transaction value, with the broker funding the remaining amount"
+            "MTF": "Allows investors to buy stocks by paying only a fraction of the total transaction value, with the broker funding the remaining amount",
         }
         return descriptions.get(self.value, "Unknown Product Type")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
         Returns a dictionary of all product type descriptions.
         """
         return {product.value: product.description() for product in cls}
-    
+
 
 class Segment(StrEnum):
     EQUITY = "EQ"
@@ -84,10 +85,10 @@ class Segment(StrEnum):
             "EQUITY": "Equity segment for trading stocks.",
             "FUTUREOPTION": "Futures and options segment for derivatives trading.",
             "COMMODITY": "Commodity segment for trading commodities.",
-            "CURRENCYDERIVATIVE": "Currency derivatives segment for forex trading."
+            "CURRENCYDERIVATIVE": "Currency derivatives segment for forex trading.",
         }
         return descriptions.get(self.value, "Unknown Segment")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
@@ -109,10 +110,10 @@ class EquitySecurityType(StrEnum):
             "RELIST": "Equity that has been reintroduced to trading on the market after a period of absence.",
             "PCA": "Equity subject to regulatory oversight due to financial or operational concerns.",
             "IPO": "Equity initially offered to the public by a company entering the market.",
-            "NORMAL": "Equity that operates under standard market conditions without special classifications."
+            "NORMAL": "Equity that operates under standard market conditions without special classifications.",
         }
         return descriptions.get(self.value, "Unknown Security Type")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
@@ -136,17 +137,17 @@ class MarketStatus(StrEnum):
             "PRE_OPEN_START": "Marks the beginning of the pre-market session.",
             "PRE_OPEN_END": "Indicates the end of the pre-market session.",
             "CLOSING_START": "Marks the start of the closing phase.",
-            "CLOSING_END": "Indicates the end of the closing phase."
+            "CLOSING_END": "Indicates the end of the closing phase.",
         }
         return descriptions.get(self.value, "Unknown Market Status")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
         Returns a dictionary of all market status descriptions.
         """
         return {status.value: status.description() for status in cls}
-    
+
 
 class OrderStatus(StrEnum):
     VALIDATION_PENDING = "validation pending"
@@ -185,7 +186,7 @@ class OrderStatus(StrEnum):
             "rejected": "The order was not accepted and has been rejected by the exchange.",
             "cancelled": "The order has been successfully cancelled.",
             "open pending": "The order has been received and is pending opening.",
-            "not modified": "The request for modification was not processed; the order remains in its original state."
+            "not modified": "The request for modification was not processed; the order remains in its original state.",
         }
         return descriptions.get(self.value, "Unknown Order Status")
 
@@ -203,16 +204,17 @@ class HistoricalDataInterval(StrEnum):
     DAY = "day"
     WEEK = "week"
     MONTH = "month"
+
     def description(self) -> str:
         descriptions = {
             "1minute": "Data interval of one minute.",
             "30minutes": "Data interval of thirty minutes.",
             "day": "Daily data interval.",
             "week": "Weekly data interval.",
-            "month": "Monthly data interval."
+            "month": "Monthly data interval.",
         }
         return descriptions.get(self.value, "Unknown Interval")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
@@ -224,14 +226,14 @@ class HistoricalDataInterval(StrEnum):
 class Validity(StrEnum):
     DAY = "DAY"
     IOC = "IOC"
-    
+
     def description(self) -> str:
         descriptions = {
             "DAY": "Order is valid for the entire trading day.",
-            "IOC": "Immediate or Cancel; order is executed immediately or cancelled."
+            "IOC": "Immediate or Cancel; order is executed immediately or cancelled.",
         }
         return descriptions.get(self.value, "Unknown Validity")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
@@ -251,25 +253,28 @@ class OrderType(StrEnum):
             "MARKET": "Order executed at the current market price.",
             "LIMIT": "Order executed at a specified price or better.",
             "SL": "Stop-loss order to limit potential losses.",
-            "SL-M": "Stop-loss market order; triggers a market order when the stop price is reached."
+            "SL-M": "Stop-loss market order; triggers a market order when the stop price is reached.",
         }
         return descriptions.get(self.value, "Unknown Order Type")
-    
+
     @classmethod
     def all_descriptions(cls):
         """
         Returns a dictionary of all order type descriptions.
         """
         return {order_type.value: order_type.description() for order_type in cls}
-    
+
 
 if __name__ == "__main__":
     print(f"Exchange Descriptions: {Exchange.all_descriptions()}\n")
     print(f"Transaction Type Descriptions: {TransactionType.all_descriptions()}\n")
     print(f"Product Type Descriptions: {ProductType.all_descriptions()}\n")
     print(f"Segment Descriptions: {Segment.all_descriptions()}\n")
-    print(f"Equity Security Type Descriptions: {EquitySecurityType.all_descriptions()}\n")
+    print(
+        f"Equity Security Type Descriptions: {EquitySecurityType.all_descriptions()}\n"
+    )
     print(f"Market Status Descriptions: {MarketStatus.all_descriptions()}\n")
     print(f"Order Status Descriptions: {OrderStatus.all_descriptions()}\n")
-    print(f"Historical Data Interval Descriptions: {HistoricalDataInterval.all_descriptions()}\n")
-
+    print(
+        f"Historical Data Interval Descriptions: {HistoricalDataInterval.all_descriptions()}\n"
+    )

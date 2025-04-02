@@ -3,20 +3,28 @@ import sys
 import re
 from datetime import datetime, date
 from typing import List, Optional
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import requests
 
 from API.Upstox.UpstoxLogin import Login
 from API.Upstox.DataExtractor import DataExtractor
-from API.Upstox.Constants import Exchange, TransactionType, ProductType, Segment, HistoricalDataInterval
+from API.Upstox.Constants import (
+    Exchange,
+    TransactionType,
+    ProductType,
+    Segment,
+    HistoricalDataInterval,
+)
 
 
 class Data:
     """
     Base class for Upstox API data operations.
     """
-    def __init__(self, access_token: str=None):
+
+    def __init__(self, access_token: str = None):
         """
         Initialize the Data class with the provided access token.
         """
@@ -26,7 +34,9 @@ class Data:
             try:
                 self.access_token = Login().login()
             except Exception as e:
-                raise RuntimeError("Failed to retrieve access token from Upstox. ") from e
+                raise RuntimeError(
+                    "Failed to retrieve access token from Upstox. "
+                ) from e
         self.live_url = "https://api.upstox.com/v2"
 
     def validate_response(self, response, endpoint):
@@ -36,9 +46,11 @@ class Data:
         if response.status_code == 200:
             return response.json()
         else:
-            print(f"Error accessing endpoint: {endpoint}, Status code: {response.status_code}, Response: {response.json()}\n")
+            print(
+                f"Error accessing endpoint: {endpoint}, Status code: {response.status_code}, Response: {response.json()}\n"
+            )
             return None
-    
+
     def _convert_date_format(self, date_given: str):
         """
         Convert the date format from DD-MM-YYYY to YYYY-MM-DD.
@@ -48,46 +60,50 @@ class Data:
         except ValueError:
             raise ValueError("Invalid date format. Use DD-MM-YYYY.")
         return date_obj.strftime("%Y-%m-%d")
-         
-        
+
     def _generate_instrument_token(self, trading_symbol: str, exchange: Exchange):
         """
         Generate the instrument key for the given trading symbol and exchange.
         """
         if exchange == Exchange.NSE:
             extractor = DataExtractor()
-            trading_instrument = extractor.get_nse_trading_instrument_for_symbol(trading_symbol)
+            trading_instrument = extractor.get_nse_trading_instrument_for_symbol(
+                trading_symbol
+            )
             return trading_instrument
-                
+
         elif exchange == Exchange.BSE:
             raise NotImplementedError("BSE exchange is not supported yet.")
-        
+
         elif exchange == Exchange.NFO:
             raise NotImplementedError("NFO exchange is not supported yet.")
-        
+
         elif exchange == Exchange.BFO:
             raise NotImplementedError("BFO exchange is not supported yet.")
-        
+
         elif exchange == Exchange.CDS:
             raise NotImplementedError("CDS exchange is not supported yet.")
-        
+
         elif exchange == Exchange.BCD:
             raise NotImplementedError("BCD exchange is not supported yet.")
-        
+
         elif exchange == Exchange.NSCOM:
             raise NotImplementedError("NSCOM exchange is not supported yet.")
-        
+
         elif exchange == Exchange.MCX:
             raise NotImplementedError("MCX exchange is not supported yet.")
-        
+
         else:
-            raise ValueError(f"Unsupported exchange: {exchange}. Please provide a valid exchange.")
+            raise ValueError(
+                f"Unsupported exchange: {exchange}. Please provide a valid exchange."
+            )
 
 
 class UserData(Data):
     """
     Class for Upstox API user data operations.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the UserData class with the provided access token.
@@ -102,13 +118,13 @@ class UserData(Data):
         endpoint = "user/profile"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers)
         return self.validate_response(response, endpoint)
-        
+
     def get_fund_and_margin(self):
         """
         Get the funds and margin information of the user.
@@ -116,12 +132,10 @@ class UserData(Data):
         """
         endpoint = "user/get-funds-and-margin"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'segment': 'SEC'
-        }
+        params = {"segment": "SEC"}
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
@@ -132,6 +146,7 @@ class OrderData(Data):
     """
     Class for Upstox API order data operations.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the OrderData class with the provided access token.
@@ -145,37 +160,37 @@ class OrderData(Data):
         """
         endpoint = "order/details"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'order_id': order_id
-        }
+        params = {"order_id": order_id}
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
-    def get_order_history(self, order_id: Optional[str]=None, tag : Optional[str] = None):
+
+    def get_order_history(
+        self, order_id: Optional[str] = None, tag: Optional[str] = None
+    ):
         """
         Get the order history for the given order ID or tag.
         Uses GET method to fetch order history.
         """
         endpoint = "order/history"
         url = f"{self.live_url}/{endpoint}"
-        params={}
+        params = {}
         if order_id:
-            params['order_id'] = order_id
+            params["order_id"] = order_id
         if tag:
-            params['tag'] = tag
+            params["tag"] = tag
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
+
     def get_order_book(self):
         """
         Get the order book of the user.
@@ -184,13 +199,13 @@ class OrderData(Data):
         endpoint = "order/retrieve-all"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers)
         return self.validate_response(response, endpoint)
-    
+
     def get_trades_for_today(self):
         """
         Get the trades for today.
@@ -199,8 +214,8 @@ class OrderData(Data):
         endpoint = "order/trades/get-trades-for-day"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers)
@@ -213,18 +228,23 @@ class OrderData(Data):
         """
         endpoint = "order/trades"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'order_id': order_id
-        }
+        params = {"order_id": order_id}
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
 
-    def get_trade_history(self, start_date: str, end_date: str, page_number: int = 1, page_size: int = 2*31-1, segment: Optional[Segment]=None):
+    def get_trade_history(
+        self,
+        start_date: str,
+        end_date: str,
+        page_number: int = 1,
+        page_size: int = 2 * 31 - 1,
+        segment: Optional[Segment] = None,
+    ):
         """
         Get the trade history for the given date range.
         Uses GET method to fetch trade history.
@@ -235,17 +255,17 @@ class OrderData(Data):
         end_date = self._convert_date_format(end_date)
         endpoint = "charges/historical-trades"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'start_date': start_date,
-            'end_date': end_date,
-            'page_number': page_number,
-            'page_size': page_size
+        params = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "page_number": page_number,
+            "page_size": page_size,
         }
         if segment:
-            params['segment'] = segment
+            params["segment"] = segment
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
@@ -256,6 +276,7 @@ class PortfolioData(Data):
     """
     Class for Upstox API portfolio data operations.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the PortfolioData class with the provided access token.
@@ -270,13 +291,13 @@ class PortfolioData(Data):
         endpoint = "portfolio/short-term-positions"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers)
         return self.validate_response(response, endpoint)
-        
+
     def get_holdings(self):
         """
         Get the holdings of the user.
@@ -285,8 +306,8 @@ class PortfolioData(Data):
         endpoint = "portfolio/long-term-holdings"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers)
@@ -297,6 +318,7 @@ class MarketQuoteData(Data):
     """
     Class for Upstox API market quote data operations.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the MarketQuoteData class with the provided access token.
@@ -310,88 +332,119 @@ class MarketQuoteData(Data):
         """
         endpoint = "market-quote/ltp"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'instrument_key': self._generate_instrument_token(trading_symbol=trading_symbol, exchange=exchange)
+        params = {
+            "instrument_key": self._generate_instrument_token(
+                trading_symbol=trading_symbol, exchange=exchange
+            )
         }
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
 
-    def get_multiple_ltp(self, trading_symbols: List[str], exchange: List[Exchange], max_results: int = 5):
+    def get_multiple_ltp(
+        self, trading_symbols: List[str], exchange: List[Exchange], max_results: int = 5
+    ):
         """
         Get the last traded price (LTP) for multiple instruments.
         """
         if len(trading_symbols) != len(exchange):
-            raise ValueError("The length of trading_symbols and exchange must be the same.")
+            raise ValueError(
+                "The length of trading_symbols and exchange must be the same."
+            )
         if len(trading_symbols) > max_results:
-            raise ValueError(f"The number of trading symbols per request cannot exceed {max_results}.")
-        
+            raise ValueError(
+                f"The number of trading symbols per request cannot exceed {max_results}."
+            )
+
         endpoint = "market-quote/ltp"
         url = f"{self.live_url}/{endpoint}"
-        instrument_tokens = [self._generate_instrument_token(trading_symbol=trading_symbol, exchange=exchange) for trading_symbol, exchange in zip(trading_symbols, exchange)]
-        instrument_tokens_str = ','.join(instrument_tokens)        
+        instrument_tokens = [
+            self._generate_instrument_token(
+                trading_symbol=trading_symbol, exchange=exchange
+            )
+            for trading_symbol, exchange in zip(trading_symbols, exchange)
+        ]
+        instrument_tokens_str = ",".join(instrument_tokens)
 
-        params={
-            'instrument_key': instrument_tokens_str
-        }
+        params = {"instrument_key": instrument_tokens_str}
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
+
 
 class BrokerageData(Data):
     """
     Class for Upstox API brokerage data operations.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the BrokerageData class with the provided access token.
         """
         super().__init__(access_token)
 
-    def get_brokerage(self, trading_symbol: str, exchange: Exchange, quantity: int, product: ProductType, transaction_type: TransactionType, price: float):
+    def get_brokerage(
+        self,
+        trading_symbol: str,
+        exchange: Exchange,
+        quantity: int,
+        product: ProductType,
+        transaction_type: TransactionType,
+        price: float,
+    ):
         """
         Get the brokerage details for the given order ID.
         Uses GET method to fetch brokerage details.
         """
         endpoint = "charges/brokerage"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'instrument_token': self._generate_instrument_token(trading_symbol=trading_symbol, exchange=exchange),
-            'quantity': quantity,
-            'product': product,
-            'transaction_type': transaction_type,
-            'price': price
+        params = {
+            "instrument_token": self._generate_instrument_token(
+                trading_symbol=trading_symbol, exchange=exchange
+            ),
+            "quantity": quantity,
+            "product": product,
+            "transaction_type": transaction_type,
+            "price": price,
         }
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-        
+
 
 class ProfitAndLossData(Data):
     """
     Class for Upstox API profit and loss data operations.
     This works for only one financial year at a time.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the ProfitAndLossData class with the provided access token.
         """
         super().__init__(access_token)
 
-    def get_profit_and_loss_report(self, segment: Segment, financial_year: str, page_number: int = 1, page_size: int = 2*31-1, from_date: Optional[str]=None, to_date: Optional[str]=None):
+    def get_profit_and_loss_report(
+        self,
+        segment: Segment,
+        financial_year: str,
+        page_number: int = 1,
+        page_size: int = 2 * 31 - 1,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+    ):
         """
         Get the profit and loss report for the given date range.
         Uses GET method to fetch profit and loss report.
@@ -401,27 +454,33 @@ class ProfitAndLossData(Data):
         """
         endpoint = "trade/profit-loss/data"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'segment': segment,
-            'financial_year': self._get_financial_year(financial_year),
-            'page_number': page_number,
-            'page_size': page_size
+        params = {
+            "segment": segment,
+            "financial_year": self._get_financial_year(financial_year),
+            "page_number": page_number,
+            "page_size": page_size,
         }
         if from_date:
             self._check_if_date_in_financial_year(from_date, financial_year)
-            params['from_date'] = from_date
+            params["from_date"] = from_date
         if to_date:
             self._check_if_date_in_financial_year(to_date, financial_year)
-            params['to_date'] = to_date
+            params["to_date"] = to_date
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
-    def trade_charges(self, segment: Segment, financial_year: str, from_date: Optional[str]=None, to_date: Optional[str]=None):
+
+    def trade_charges(
+        self,
+        segment: Segment,
+        financial_year: str,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+    ):
         """
         Get the trade charges for the given date range.
         Uses GET method to fetch trade charges.
@@ -431,25 +490,31 @@ class ProfitAndLossData(Data):
         """
         endpoint = "trade/profit-loss/charges"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'segment': segment,
-            'financial_year': self._get_financial_year(financial_year)
+        params = {
+            "segment": segment,
+            "financial_year": self._get_financial_year(financial_year),
         }
         if from_date:
             self._check_if_date_in_financial_year(from_date, financial_year)
-            params['from_date'] = from_date
+            params["from_date"] = from_date
         if to_date:
             self._check_if_date_in_financial_year(to_date, financial_year)
-            params['to_date'] = to_date
+            params["to_date"] = to_date
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
-    def get_report_metadata(self, segment: Segment, financial_year: str, from_date: Optional[str]=None, to_date: Optional[str]=None):
+
+    def get_report_metadata(
+        self,
+        segment: Segment,
+        financial_year: str,
+        from_date: Optional[str] = None,
+        to_date: Optional[str] = None,
+    ):
         """
         Get the report metadata for the given date range.
         Uses GET method to fetch report metadata.
@@ -459,24 +524,24 @@ class ProfitAndLossData(Data):
         """
         endpoint = "trade/profit-loss/metadata"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'segment': segment,
-            'financial_year': self._get_financial_year(financial_year)
+        params = {
+            "segment": segment,
+            "financial_year": self._get_financial_year(financial_year),
         }
         if from_date:
             self._check_if_date_in_financial_year(from_date, financial_year)
-            params['from_date'] = from_date
+            params["from_date"] = from_date
         if to_date:
             self._check_if_date_in_financial_year(to_date, financial_year)
-            params['to_date'] = to_date
+            params["to_date"] = to_date
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
+
     def _check_if_date_in_financial_year(self, date_given: str, financial_year: str):
         """
         Check if the given date is within the financial year.
@@ -486,14 +551,16 @@ class ProfitAndLossData(Data):
         except:
             raise ValueError("Invalid date format. Use DD-MM-YYYY.")
         try:
-            start_year, end_year = map(int, financial_year.split('-'))
+            start_year, end_year = map(int, financial_year.split("-"))
         except:
             raise ValueError("Invalid financial year format. Use YYYY-YYYY.")
-        
+
         fy_start_date = date(start_year, 4, 1)
         fy_end_date = date(end_year, 3, 31)
         if not (fy_start_date <= date_obj <= fy_end_date):
-            raise ValueError(f"Date {date_given} is not within the financial year {financial_year}.")
+            raise ValueError(
+                f"Date {date_given} is not within the financial year {financial_year}."
+            )
         return True
 
     def _get_financial_year(self, financial_year: str):
@@ -503,10 +570,10 @@ class ProfitAndLossData(Data):
         pattern = r"^(19|20)\d{2}-(19|20)\d{2}$"
         if not re.match(pattern, financial_year):
             raise ValueError("Invalid financial year format. Use YYYY-YYYY.")
-        start_year, end_year = map(int, financial_year.split('-'))
+        start_year, end_year = map(int, financial_year.split("-"))
         if end_year != start_year + 1:
             raise ValueError("Invalid financial year range. Must be consecutive years.")
-        return financial_year[2:4]+financial_year[7:] 
+        return financial_year[2:4] + financial_year[7:]
 
 
 class HistoricalData(Data):
@@ -514,59 +581,70 @@ class HistoricalData(Data):
     Class for Upstox API historical data operations.
     It retrieves historical data as OHLC (Open, High, Low, Close) values.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the HistoricalData class with the provided access token.
         """
         super().__init__(access_token)
 
-    def get_historical_data(self, trading_symbol: str, exchange: Exchange, interval: HistoricalDataInterval, to_date: str, from_date: Optional[str]=None):
+    def get_historical_data(
+        self,
+        trading_symbol: str,
+        exchange: Exchange,
+        interval: HistoricalDataInterval,
+        to_date: str,
+        from_date: Optional[str] = None,
+    ):
         """
         Get historical data for the given instrument token.
         Give the date in DD-MM-YYYY format.
         Uses GET method to fetch historical data.
         """
         to_date = self._convert_date_format(to_date)
-        instrument_token = self._generate_instrument_token(trading_symbol=trading_symbol, exchange=exchange)
+        instrument_token = self._generate_instrument_token(
+            trading_symbol=trading_symbol, exchange=exchange
+        )
         endpoint = f"historical-candle/{self._convert_instrument_token_for_url_parse(instrument_token)}/{interval}/{to_date}"
         if from_date:
             from_date = self._convert_date_format(from_date)
             endpoint += f"/{from_date}"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'instrument_token': instrument_token,
-            'interval': interval,
-            'from_date': from_date,
-            'to_date': to_date
+        params = {
+            "instrument_token": instrument_token,
+            "interval": interval,
+            "from_date": from_date,
+            "to_date": to_date,
         }
         headers = {
-        'Accept': 'application/json',
+            "Accept": "application/json",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
-    def get_current_trading_day_data(self, trading_symbol: str, exchange: Exchange, interval: HistoricalDataInterval):
+
+    def get_current_trading_day_data(
+        self, trading_symbol: str, exchange: Exchange, interval: HistoricalDataInterval
+    ):
         """
         Get the current trading day data for the given instrument token.
         Uses Intraday API for current trading day data.
         Uses GET method to fetch current trading day data.
         One-minute and 30-minute candle data are accessible solely for the preceding six months.
         """
-        instrument_token = self._generate_instrument_token(trading_symbol=trading_symbol, exchange=exchange)
+        instrument_token = self._generate_instrument_token(
+            trading_symbol=trading_symbol, exchange=exchange
+        )
         endpoint = f"historical-candle/intraday/{self._convert_instrument_token_for_url_parse(instrument_token)}/{interval}"
         url = f"{self.live_url}/{endpoint}"
-        params={
-            'instrument_token': instrument_token,
-            'interval': interval
-        }
+        params = {"instrument_token": instrument_token, "interval": interval}
         headers = {
-        'Accept': 'application/json',
+            "Accept": "application/json",
         }
 
         response = requests.request("GET", url, headers=headers, params=params)
         return self.validate_response(response, endpoint)
-    
+
     def _convert_instrument_token_for_url_parse(self, instrument_token: str):
         """
         Convert the instrument token for URL parsing.
@@ -579,6 +657,7 @@ class MarketInformationData(Data):
     """
     Class for Upstox API market information data operations.
     """
+
     def __init__(self, access_token: str):
         """
         Initialize the MarketInformationData class with the provided access token.
@@ -595,12 +674,12 @@ class MarketInformationData(Data):
         endpoint = f"market/holidays/{date_given}"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
+            "Accept": "application/json",
         }
 
         response = requests.request("GET", url, headers=headers)
         return self.validate_response(response, endpoint)
-        
+
     def get_market_timings(self, date_given: str):
         """
         Get the market timings for the given date.
@@ -611,12 +690,12 @@ class MarketInformationData(Data):
         endpoint = f"market/timings/{date_given}"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
+            "Accept": "application/json",
         }
 
         response = requests.request("GET", url, headers=headers)
         return self.validate_response(response, endpoint)
-    
+
     def get_exchange_status(self, exchange: Exchange):
         """
         Get the market status for the given exchange.
@@ -625,14 +704,15 @@ class MarketInformationData(Data):
         endpoint = f"market/status/{exchange}"
         url = f"{self.live_url}/{endpoint}"
         headers = {
-        'Accept': 'application/json',
-        'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
 
         response = requests.request("GET", url, headers=headers)
         return self.validate_response(response, endpoint)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     access_token = Login().login()
     data = Data(access_token)
 

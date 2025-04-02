@@ -1,10 +1,11 @@
 import os
 import sys
 from pprint import pprint
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import upstox_client
-from upstox_client import ApiClient 
+from upstox_client import ApiClient
 from upstox_client.rest import ApiException
 
 from API.Upstox.UpstoxLogin import UpstoxLogin
@@ -14,9 +15,9 @@ if __name__ == "__main__":
     upstox_login = UpstoxLogin()
 
     # Login to Upstox
-    configuration =upstox_login.login()
+    configuration = upstox_login.login()
     api_instance = upstox_client.UserApi(ApiClient(configuration=configuration))
-    api_version = 'api_version_example' # str | API Version Header
+    api_version = "api_version_example"  # str | API Version Header
 
     try:
         # Get profile
@@ -24,7 +25,7 @@ if __name__ == "__main__":
         pprint(api_response)
     except ApiException as e:
         print("Exception when calling UserApi->get_profile: %s\n" % e)
-    
+
     # Place an order
     api_instance = upstox_client.OrderApiV3()
     body = upstox_client.PlaceOrderV3Request(
@@ -37,7 +38,7 @@ if __name__ == "__main__":
         is_amo=False,
         price=7.0,
         disclosed_quantity=0,
-        trigger_price=7.0
+        trigger_price=7.0,
     )
 
     try:

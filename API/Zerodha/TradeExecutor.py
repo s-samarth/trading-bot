@@ -3,14 +3,16 @@ import sys
 import json
 from typing import Optional
 from pprint import pprint
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 
 from dotenv import load_dotenv
-from pydantic import BaseModel 
+from pydantic import BaseModel
 from kiteconnect import KiteConnect
 
 from API.Zerodha.ZerodhaLogin import Login
+
 
 class PlaceOrderData(BaseModel):
     tradingsymbol: str
@@ -26,6 +28,7 @@ class PlaceOrderData(BaseModel):
     trigger_price: Optional[float] = None
     tag: Optional[str] = None
 
+
 class GTTOrderData(BaseModel):
     transaction_type: str
     quantity: int = 1
@@ -38,7 +41,7 @@ class GTTData(BaseModel):
     trigger_type: str = KiteConnect.GTT_TYPE_SINGLE
     tradingsymbol: str
     exchange: str = KiteConnect.EXCHANGE_NSE
-    trigger_values: list[float]             # List of values to buy or sell at
+    trigger_values: list[float]  # List of values to buy or sell at
     last_price: float
     orders: list[GTTOrderData]
 
@@ -62,19 +65,26 @@ class TradeExecutor:
         except Exception as e:
             print(f"Error placing order: {e}")
             return None
-        
-    def cancel_order(self, order_id: str, variety: str = KiteConnect.VARIETY_REGULAR, parent_order_id: Optional[str] = None):
+
+    def cancel_order(
+        self,
+        order_id: str,
+        variety: str = KiteConnect.VARIETY_REGULAR,
+        parent_order_id: Optional[str] = None,
+    ):
         """
         Cancel an order using the KiteConnect API.
         """
         try:
-            response = self.kite.cancel_order(order_id=order_id, variety=variety, parent_order_id=parent_order_id)
+            response = self.kite.cancel_order(
+                order_id=order_id, variety=variety, parent_order_id=parent_order_id
+            )
             print(f"Order cancelled successfully. Response: {response}")
             return response
         except Exception as e:
             print(f"Error cancelling order: {e}")
             return None
-        
+
     def place_gtt(self, gtt_data: GTTData):
         """
         Place a GTT (Good Till Triggered) order using the KiteConnect API.
@@ -88,21 +98,26 @@ class TradeExecutor:
             print(f"Error placing GTT order: {e}")
             return None
 
+
 if __name__ == "__main__":
     # Load environment variables from .env file
     load_dotenv()
     # Initialize the login class
     kite = KiteConnect(api_key=os.getenv("ZERODHA_API_KEY"))
     zerodha_login = Login(kite=kite)
-    
+
     # Login to Zerodha
     kite = zerodha_login.login()
     if kite is not None:
         pass
-    # Executing the Trades
+        # Executing the Trades
         trade_executor = TradeExecutor(kite=kite)
         # Example of placing a buy order
-        place_order_data = PlaceOrderData(tradingsymbol="IDEA", transaction_type=KiteConnect.TRANSACTION_TYPE_BUY, quantity=1)
+        place_order_data = PlaceOrderData(
+            tradingsymbol="IDEA",
+            transaction_type=KiteConnect.TRANSACTION_TYPE_BUY,
+            quantity=1,
+        )
         buy_order = trade_executor.place_order(order_params=place_order_data)
         print(f"Buy Order: {buy_order}")
 
@@ -112,7 +127,14 @@ if __name__ == "__main__":
             print(f"Cancel Order Response: {cancel_order_response}")
 
         # Example of creating GTT orders
-        gtt_order_data = GTTOrderData(transaction_type=KiteConnect.TRANSACTION_TYPE_BUY, quantity=1, price=10.0)
-        gtt_data = GTTData(tradingsymbol="IDEA", trigger_values=[10.0], last_price=9.0, orders=[gtt_order_data])
+        gtt_order_data = GTTOrderData(
+            transaction_type=KiteConnect.TRANSACTION_TYPE_BUY, quantity=1, price=10.0
+        )
+        gtt_data = GTTData(
+            tradingsymbol="IDEA",
+            trigger_values=[10.0],
+            last_price=9.0,
+            orders=[gtt_order_data],
+        )
         gtt_order = trade_executor.place_gtt(gtt_data=gtt_data)
         print(f"GTT Order: {gtt_order}")

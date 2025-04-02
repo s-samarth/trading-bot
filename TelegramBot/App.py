@@ -1,5 +1,6 @@
 import os
 import sys
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from dotenv import load_dotenv
@@ -8,6 +9,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from TelegramBot.Commands import Commands
 from TelegramBot.MessageHandling import MessageHandling
 from TelegramBot.ErrorHandling import ErrorHandling
+
 
 class App:
     def __init__(self):
@@ -39,6 +41,7 @@ class App:
         # Polling
         print("Bot is running...")
         app.run_polling(poll_interval=5)
+
 
 if __name__ == "__main__":
     app = App()

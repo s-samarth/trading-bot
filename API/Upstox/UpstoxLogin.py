@@ -5,6 +5,7 @@ import json
 import random
 import webbrowser
 from enum import StrEnum
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 import requests
@@ -38,13 +39,15 @@ class Login:
         self.encoded_redirect_uri = urlparse.quote(self.redirect_uri, safe="")
         self.login_url = f"{self.base_auth_url}?response_type={self.response_type}&client_id={self.api_key}&redirect_uri={self.encoded_redirect_uri}"
         self.api_version = os.getenv("UPSTOX_API_VERSION")
-        
+
         self.login_mode = login_mode
         if self.login_mode == LoginMode.AUTOMATED:
             self.mobile_number = os.getenv("UPSTOX_MOBILE_NUMBER")
             self.totp_secret = os.getenv("UPSTOX_TOTP_SECRET")
             self.mpin = os.getenv("UPSTOX_MPIN")
-        self.access_token = self.get_access_token()  # Load access token from file if it exists
+        self.access_token = (
+            self.get_access_token()
+        )  # Load access token from file if it exists
 
     def login(self) -> str:
         if self.access_token:
@@ -60,7 +63,7 @@ class Login:
             self.access_token = self.manual_login()
         elif self.login_mode == LoginMode.AUTOMATED:
             self.access_token = self.automate_login_selenium()
-        else:   
+        else:
             print("Invalid login mode. Please choose either 'manual' or 'automated'.")
             return None
 
@@ -71,14 +74,14 @@ class Login:
             print("Failed to set access token.")
             print("Please login again.")
         return self.access_token
-    
+
     def manual_login(self):
         print("Logging in to Upstox Manually...")
         # Generate access token using the auth code
         auth_code = self.get_auth_code_manually()
         access_token = self.generate_access_token(auth_code=auth_code)
         return access_token
-    
+
     def automate_login_selenium(self, default_wait_time=30):
         """
         Automate the login process using Selenium WebDriver.
@@ -93,11 +96,12 @@ class Login:
             print("Navigated to Upstox login page")
             # Wait for the page to load with human like behaviour
             wait = WebDriverWait(driver, default_wait_time)
-        
 
             # 🟢 Enter Mobile Number
-            mobile_number_input = wait.until(EC.presence_of_element_located((By.ID, "mobileNum")))
-            time.sleep(random.uniform(2, 4)) 
+            mobile_number_input = wait.until(
+                EC.presence_of_element_located((By.ID, "mobileNum"))
+            )
+            time.sleep(random.uniform(2, 4))
             mobile_number_input.send_keys(self.mobile_number)
             print("Mobile Number entered")
 
@@ -106,7 +110,6 @@ class Login:
             driver.find_element(By.ID, "getOtp").click()
             print("Get OTP button clicked")
 
-            
             # 🟢 Enter TOTP
             wait = WebDriverWait(driver, default_wait_time)
             totp_input = wait.until(EC.presence_of_element_located((By.ID, "otpNum")))
@@ -152,7 +155,7 @@ class Login:
             if not access_token or access_token == "":
                 raise ValueError("Access token is empty or invalid.")
             return access_token
-    
+
         except Exception as e:
             print("Error during Automated Selenium login:", str(e))
             driver.quit()
@@ -178,7 +181,7 @@ class Login:
             "code": auth_code,
             "client_id": self.api_key,
             "client_secret": self.api_secret,
-            "redirect_uri": self.redirect_uri
+            "redirect_uri": self.redirect_uri,
         }
         response = requests.post(self.token_url, data=payload)
         if response.status_code == 200:
@@ -187,9 +190,9 @@ class Login:
         else:
             print("Error:", response.json())
             access_token = None
-        
+
         return access_token
-    
+
     def save_access_token(self, access_token: str):
         with open(self.access_token_file_path, "w") as file:
             file.write(access_token)
@@ -207,12 +210,12 @@ class Login:
         except Exception as e:
             print(f"Error retrieving access token: {str(e)}")
             return None
-        
+
     def logout(self, access_token: str):
-        url = 'https://api.upstox.com/v2/logout'
+        url = "https://api.upstox.com/v2/logout"
         headers = headers = {
-            'Accept': 'application/json',
-            'Authorization': f'Bearer {access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {access_token}",
         }
 
         response = requests.delete(url, headers=headers)
@@ -222,21 +225,23 @@ class Login:
         else:
             print("Error logging out:", response.json())
             return False
-        
+
     def _get_user_profile(self):
-        url = 'https://api.upstox.com/v2/user/profile'
+        url = "https://api.upstox.com/v2/user/profile"
         headers = {
-            'Accept': 'application/json',
-            'Authorization': f'Bearer {self.access_token}'
+            "Accept": "application/json",
+            "Authorization": f"Bearer {self.access_token}",
         }
         response = requests.get(url, headers=headers)
         return response.json() if response.status_code == 200 else None
-            
+
 
 class SandboxLogin:
     def __init__(self):
         self.current_dir = f"{Config.root_dir}/API/Upstox"
-        self.sandbox_access_token_file_path = os.path.join(self.current_dir, "sandbox_access_token.txt")
+        self.sandbox_access_token_file_path = os.path.join(
+            self.current_dir, "sandbox_access_token.txt"
+        )
 
     def login(self):
         sandbox_access_token = self.get_sandbox_access_token()
@@ -245,7 +250,7 @@ class SandboxLogin:
             return sandbox_access_token
         else:
             raise PermissionError("Sandbox Token Expired, Regenerate and try again.")
-            
+
     def get_sandbox_access_token(self):
         try:
             with open(self.sandbox_access_token_file_path, "r") as file:
@@ -258,27 +263,29 @@ class SandboxLogin:
         except Exception as e:
             print(f"Error retrieving sandbox access token: {str(e)}")
             return None
-        
+
     def _place_order(self, sandbox_access_token: str):
         url = "https://api-sandbox.upstox.com/v2/order/place"
 
-        payload = json.dumps({
-        "quantity": 1,
-        "product": "D",
-        "validity": "DAY",
-        "price": 0,
-        "tag": "string",
-        "instrument_token": "NSE_EQ|INE848E01016",
-        "order_type": "MARKET",
-        "transaction_type": "BUY",
-        "disclosed_quantity": 0,
-        "trigger_price": 0,
-        "is_amo": False
-        })
+        payload = json.dumps(
+            {
+                "quantity": 1,
+                "product": "D",
+                "validity": "DAY",
+                "price": 0,
+                "tag": "string",
+                "instrument_token": "NSE_EQ|INE848E01016",
+                "order_type": "MARKET",
+                "transaction_type": "BUY",
+                "disclosed_quantity": 0,
+                "trigger_price": 0,
+                "is_amo": False,
+            }
+        )
         headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {sandbox_access_token}',
-        'Accept': 'application/json'
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {sandbox_access_token}",
+            "Accept": "application/json",
         }
 
         response = requests.request("POST", url, headers=headers, data=payload)
@@ -294,6 +301,3 @@ if __name__ == "__main__":
 
     sandbox_login = SandboxLogin()
     sandbox_access_token = sandbox_login.login()
-
-    
-    
