@@ -35,6 +35,7 @@ class BaseExchange(StrEnum):
         return {exchange.value: exchange.description() for exchange in cls}
 
 
+
 class BaseTransactionType(StrEnum):
     """Supported transaction types."""
 
@@ -81,6 +82,7 @@ class BaseProductType(StrEnum):
         return {product.value: product.description() for product in cls}
 
 
+
 class BaseOrderType(StrEnum):
     """Supported order types."""
 
@@ -104,3 +106,4 @@ class BaseOrderType(StrEnum):
     def all_descriptions(cls) -> Dict[str, str]:
         """Returns a dictionary of all order type descriptions."""
         return {order.value: order.description() for order in cls}
+

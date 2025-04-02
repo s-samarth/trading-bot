@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from TradingStrategy.Constants import TradingSymbol, BaseExchange, BaseTransactionType
 
 
+
 class TradingStrategyData(BaseModel):
     """
     This class is used to define the data structure for a trading strategy.

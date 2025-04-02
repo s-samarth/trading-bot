@@ -44,6 +44,7 @@ Edit `config/secrets/upstox.json`:
 ```bash
 python SetupEnv.py
 ```
+```
 
 4. Start the bot:
 ```bash
