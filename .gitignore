@@ -1,7 +1,26 @@
-*.env
-*access_token.txt
+# Python
 __pycache__/
-*.DS_Store
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+test_env
+
+# Environment variables and secrets
+.env
+config/secrets/*
+!config/secrets/*.template.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Project specific
+*access_token.txt
 *.log
 UpstoxData/
-.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

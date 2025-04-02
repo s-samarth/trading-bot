@@ -1,170 +1,268 @@
-from typing import List, Any, Optional
+from typing import Dict, List, Any, Optional, TypeVar
+from pathlib import Path
+import json
 from pydantic import BaseModel
+from ChromeDrivers.ChromeDrivers import ChromeDrivers
+import logging
+from config.Logging import logging  # Import the configured logging instance
 
 
 class EnvironmentVariable(BaseModel):
-    KEY: str
-    VALUE: str
+    key: str
+    value: str
+
+    class Config:
+        frozen = True
+
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class ChromeDriverConfig(BaseModel):
-    """ChromeDriver configuration class.
-    This class is used to store the configuration for the ChromeDriver.
-    Populate it with your own values. Remove any keys you don't need.
-    """
+    """ChromeDriver configuration settings."""
 
-    # ChromeDriver configuration
-    CHROME_DRIVER_PATH: Optional[str] = ""
-    CHROME_DRIVER_REFRESH_DATE: Optional[str] = ""
+    chrome_driver_path: Optional[str] = ""
+    chrome_driver_refresh_date: Optional[str] = ""
+
+    @classmethod
+    def from_chrome_driver(cls) -> "ChromeDriverConfig":
+        """Initialize configuration from ChromeDrivers."""
+        chrome_driver = ChromeDrivers()
+        if not chrome_driver.cache_valid:
+            logging.info("Initializing/Updating ChromeDriver...")
+            chrome_driver.refresh_cache()
+
+        return cls(
+            chrome_driver_path=chrome_driver.driver_path or "",
+            chrome_driver_refresh_date=chrome_driver.refresh_date or "",
+        )
 
 
 class TelegramBotConfig(BaseModel):
-    """Telegram Bot configuration class.
-    This class is used to store the configuration for the Telegram Bot.
-    Populate it with your own values. Remove any keys you don't need.
-    """
+    """Telegram Bot configuration settings."""
 
-    # Telegram Bot configuration
-    TELEGRAM_BOT_TOKEN: str = "YOUR_TELEGRAM_BOT_TOKEN"
-    TELEGRAM_CHAT_ID: str = "YOUR_TELEGRAM_CHAT_ID"
-    TELEGRAM_BOT_USERNAME: str = "YOUR_TELEGRAM_BOT_USERNAME"
+    telegram_bot_token: str = ""
+    telegram_chat_id: str = ""
+    telegram_bot_username: str = ""
+
+    @classmethod
+    def from_json(cls, file_path: Path) -> "TelegramBotConfig":
+        if not file_path.exists():
+            return cls()
+        data = json.loads(file_path.read_text())
+        return cls(
+            telegram_bot_token=data.get("bot_token", ""),
+            telegram_chat_id=data.get("chat_id", ""),
+            telegram_bot_username=data.get("bot_username", ""),
+        )
 
 
 class ZerodhaAPIConfig(BaseModel):
-    """Zerodha configuration class.
-    This class is used to store the configuration for the Zerodha API.
-    Populate it with your own values. Remove any keys you don't need.
-    """
+    """Zerodha API configuration settings."""
 
-    # Zerodha API configuration
-    ZERODHA_USER_ID: str = "YOUR_ZERODHA_USER_ID"
-    ZERODHA_PASSWORD: str = "YOUR_ZERODHA_PASSWORD"
-    ZERODHA_API_KEY: str = "YOUR_ZERODHA_API_KEY"
-    ZERODHA_API_SECRET: str = "YOUR_ZERODHA_API_SECRET"
-    ZERODHA_TOTP_SECRET: str = "YOUR_ZERODHA_TOTP_SECRET"
-    ZERODHA_REDIRECT_URI: str = "YOUR_ZERODHA_REDIRECT_URI"
-    ZERODHA_POSTBACK_URL: Optional[str] = ""
+    zerodha_user_id: str = ""
+    zerodha_password: str = ""
+    zerodha_api_key: str = ""
+    zerodha_api_secret: str = ""
+    zerodha_totp_secret: str = ""
+    zerodha_redirect_uri: str = ""
+    zerodha_postback_url: Optional[str] = ""
+
+    @classmethod
+    def from_json(cls, file_path: Path) -> "ZerodhaAPIConfig":
+        if not file_path.exists():
+            return cls()
+        data = json.loads(file_path.read_text())
+        return cls(
+            zerodha_user_id=data.get("user_id", ""),
+            zerodha_password=data.get("password", ""),
+            zerodha_api_key=data.get("api_key", ""),
+            zerodha_api_secret=data.get("api_secret", ""),
+            zerodha_totp_secret=data.get("totp_secret", ""),
+            zerodha_redirect_uri=data.get("redirect_uri", ""),
+            zerodha_postback_url=data.get("postback_url", ""),
+        )
 
 
 class UpstoxAPIConfig(BaseModel):
-    """Upstox configuration class.
-    This class is used to store the configuration for the Upstox API.
-    Populate it with your own values. Remove any keys you don't need.
-    """
+    """Upstox API configuration settings."""
 
-    # Upstox API configuration
-    UPSTOX_API_KEY: str = "YOUR_UPSTOX_API_KEY"
-    UPSTOX_API_SECRET: str = "YOUR_UPSTOX_API_SECRET"
-    UPSTOX_REDIRECT_URI: str = "YOUR_UPSTOX_REDIRECT_URI"
-    UPSTOX_MOBILE_NUMBER: str = "YOUR_UPSTOX_MOBILE_NUMBER"
-    UPSTOX_TOTP_SECRET: str = "YOUR_UPSTOX_TOTP_SECRET"
-    UPSTOX_MPIN: str = "YOUR_UPSTOX_MPIN"
-    UPSTOX_POSTBACK_URL: Optional[str] = ""
-    UPSTOX_SANDBOX_ACCESS_TOKEN: Optional[str] = ""
+    upstox_api_key: str = ""
+    upstox_api_secret: str = ""
+    upstox_redirect_uri: str = ""
+    upstox_mobile_number: str = ""
+    upstox_totp_secret: str = ""
+    upstox_mpin: str = ""
+    upstox_postback_url: Optional[str] = ""
+    upstox_sandbox_access_token: Optional[str] = ""
+
+    @classmethod
+    def from_json(cls, file_path: Path) -> "UpstoxAPIConfig":
+        if not file_path.exists():
+            return cls()
+        data = json.loads(file_path.read_text())
+        return cls(
+            upstox_api_key=data.get("api_key", ""),
+            upstox_api_secret=data.get("api_secret", ""),
+            upstox_redirect_uri=data.get("redirect_uri", ""),
+            upstox_mobile_number=data.get("mobile_number", ""),
+            upstox_totp_secret=data.get("totp_secret", ""),
+            upstox_mpin=data.get("mpin", ""),
+            upstox_postback_url=data.get("postback_url", ""),
+            upstox_sandbox_access_token=data.get("sandbox_access_token", ""),
+        )
 
 
 class AngelOneAPIConfig(BaseModel):
-    """Angel One configuration class.
-    This class is used to store the configuration for the Angel One API.
-    Populate it with your own values. Remove any keys you don't need.
+    """Angel One API configuration settings."""
+
+    angelone_client_id: str = ""
+    angelone_trading_api_key: str = ""
+    angelone_secret_key: str = ""
+    angelone_mpin: str = ""
+    angelone_password: str = ""
+    angelone_totp_secret: str = ""
+    angelone_redirect_uri: str = ""
+    angelone_postback_url: Optional[str] = ""
+
+    @classmethod
+    def from_json(cls, file_path: Path) -> "AngelOneAPIConfig":
+        if not file_path.exists():
+            return cls()
+        data = json.loads(file_path.read_text())
+        return cls(
+            angelone_client_id=data.get("client_id", ""),
+            angelone_trading_api_key=data.get("trading_api_key", ""),
+            angelone_secret_key=data.get("secret_key", ""),
+            angelone_mpin=data.get("mpin", ""),
+            angelone_password=data.get("password", ""),
+            angelone_totp_secret=data.get("totp_secret", ""),
+            angelone_redirect_uri=data.get("redirect_uri", ""),
+            angelone_postback_url=data.get("postback_url", ""),
+        )
+
+
+def model_to_env_variables(config: BaseModel) -> List[EnvironmentVariable]:
+    """Convert a Pydantic model to a list of environment variables.
+
+    Args:
+        config: A Pydantic model instance
+
+    Returns:
+        List of EnvironmentVariable instances
     """
-
-    # AngelOne API configuration
-    ANGELONE_CLIENT_ID: str = "YOUR_ANGELONE_CLIENT_ID"
-    ANGELONE_TRADING_API_KEY: str = "YOUR_ANGELONE_TRADING_API_KEY"
-    ANGELONE_SECRET_KEY: str = "YOUR_ANGELONE_SECRET_KEY"
-    ANGELONE_MPIN: str = "YOUR_ANGELONE_MPIN"
-    ANGELONE_PASSWORD: str = "YOUR_ANGELONE_PASSWORD"
-    ANGELONE_TOTP_SECRET: str = "YOUR_ANGELONE_TOTP_SECRET"
-    ANGELONE_REDIRECT_URI: str = "YOUR_ANGELONE_REDIRECT_URI"
-    ANGELONE_POSTBACK_URL: Optional[str] = ""
+    return [
+        EnvironmentVariable(key=key.upper(), value=str(value))
+        for key, value in config.model_dump().items()
+    ]
 
 
-class SetupEnv:
-    """SetupEnv class.
-    This class is used to set up the environment variables for the application.
-    It reads the configuration from the config file and writes it to the .env file.
+def read_env_file(env_file: Path) -> Dict[str, str]:
+    """Read and parse an environment file.
+
+    Args:
+        env_file: Path to the environment file
+
+    Returns:
+        Dictionary of environment variables
     """
+    if not env_file.exists():
+        return {}
 
-    def __init__(self):
-        """
-        Initializes the SetupEnv class.
-        Remove any configurations you don't need.
-        """
-        self.chrome_driver_config = ChromeDriverConfig()
-        self.telegram_bot_config = TelegramBotConfig()
-        self.zerodha_api_config = ZerodhaAPIConfig()
-        self.upstox_api_config = UpstoxAPIConfig()
-        self.angel_one_api_config = AngelOneAPIConfig()
+    env_vars = {}
+    content = env_file.read_text().splitlines()
 
+    for line in content:
+        line = line.strip()
+        if line and not line.startswith("#"):
+            try:
+                key, value = line.split("=", 1)
+                env_vars[key.strip()] = value.strip()
+            except ValueError:
+                continue
+
+    return env_vars
+
+
+def write_env_file(env_vars: Dict[str, str], env_file: Path) -> None:
+    """Write environment variables to a file.
+
+    Args:
+        env_vars: Dictionary of environment variables
+        env_file: Path to write the environment file
+    """
+    content = "\n".join(f"{key}={value}" for key, value in sorted(env_vars.items()))
+    env_file.write_text(content + "\n")
+
+
+def update_env_vars(
+    current_vars: Dict[str, str], new_vars: List[EnvironmentVariable]
+) -> Dict[str, str]:
+    """Update environment variables, preserving existing non-empty values.
+
+    Args:
+        current_vars: Existing environment variables
+        new_vars: New environment variables to add/update
+
+    Returns:
+        Updated dictionary of environment variables
+    """
+    result = current_vars.copy()
+
+    for var in new_vars:
+        if var.value or var.key not in result:
+            if var.value:  # Only update if new value is non-empty
+                result[var.key] = var.value
+
+    return result
+
+
+class EnvironmentManager:
+    """Manages environment variable configuration and persistence."""
+
+    def __init__(self, secrets_dir: str = "config/secrets"):
+        self.secrets_dir = Path(secrets_dir)
         self.configs = [
-            self.chrome_driver_config,
-            self.telegram_bot_config,
-            self.zerodha_api_config,
-            self.upstox_api_config,
-            self.angel_one_api_config,
+            ChromeDriverConfig.from_chrome_driver(),
+            TelegramBotConfig.from_json(self.secrets_dir / "telegram.json"),
+            ZerodhaAPIConfig.from_json(self.secrets_dir / "zerodha.json"),
+            UpstoxAPIConfig.from_json(self.secrets_dir / "upstox.json"),
+            AngelOneAPIConfig.from_json(self.secrets_dir / "angelone.json"),
         ]
 
-    def setup_env(self, env_file=".env"):
-        """Sets up the environment variables for the application.
-        Reads the configuration from the config file and writes it to the .env file.
+    def setup_env(self, env_file: str = ".env") -> None:
+        """Set up environment variables from configurations.
+
+        Args:
+            env_file: Path to the environment file
         """
-        env_variables = self.get_all_env_variables()
-        self.write_env_variables(env_variables, env_file)
+        env_path = Path(env_file)
 
-    def get_all_env_variables(self) -> List[EnvironmentVariable]:
-        """Returns a list of environment variables.
-        Remove any configurations you don't need."""
-        env_variables = []
+        # Convert all configs to environment variables
+        all_vars = [
+            var for config in self.configs for var in model_to_env_variables(config)
+        ]
 
-        # Iterate through each configuration and get the environment variables
-        for config in self.configs:
-            env_variables.extend(self.get_config_env_variables(config))
-        return env_variables
+        # Read existing variables
+        current_vars = read_env_file(env_path)
 
-    def get_config_env_variables(self, config: Any) -> List[EnvironmentVariable]:
-        """Returns a list of environment variables."""
-        env_variables = []
-        for key, value in config:
-            env_variable = EnvironmentVariable(KEY=key, VALUE=value)
-            env_variables.append(env_variable)
-        return env_variables
+        # Update with new variables
+        updated_vars = update_env_vars(current_vars, all_vars)
 
-    def write_env_variables(
-        self, env_variables: List[EnvironmentVariable], env_file=".env"
-    ):
-        """Writes or updates a key-value pair in the .env file."""
-        lines = []
-        updated = False
+        # Write back to file
+        write_env_file(updated_vars, env_path)
 
-        # Read existing .env file if it exists
-        try:
-            with open(env_file, "r") as f:
-                lines = f.readlines()
-        except FileNotFoundError:
-            print(f"File {env_file} not found. Creating a new one.")
-            pass  # File doesn't exist yet
 
-        # Update the existing key if found, otherwise add a new one
-        with open(env_file, "w") as f:
-            for env_variable in env_variables:
-                key = env_variable.KEY
-                value = env_variable.VALUE
-                if value == "":
-                    print(f"Skipping empty value for key: {key}")
-                    continue
-                for line in lines:
-                    if line.startswith(f"{key}="):  # Update the existing key
-                        f.write(f"{key}={value}\n")
-                        updated = True
-                    else:
-                        f.write(line)
-
-                if not updated:  # Add new key if it doesn't exist
-                    f.write(f"{key}={value}\n")
+def main():
+    """Main entry point for environment setup."""
+    try:
+        env_manager = EnvironmentManager()
+        env_manager.setup_env()
+        logging.info("Environment variables have been updated in .env")
+    except Exception as e:
+        logging.error(f"Failed to setup environment: {str(e)}", exc_info=True)
+        raise
 
 
 if __name__ == "__main__":
-    # Example usage
-    SetupEnv().setup_env()
-    print("Environment variables written to .env.demo")
+    main()

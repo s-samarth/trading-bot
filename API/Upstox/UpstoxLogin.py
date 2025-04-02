@@ -16,7 +16,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from Config import Config
+from config.Config import Config
 from ChromeDrivers.ChromeDrivers import ChromeDrivers
 
 

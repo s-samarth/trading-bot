@@ -7,7 +7,7 @@ from typing import Dict
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from Config import Config
+from config.Config import Config
 from API.Upstox.Constants import Exchange
 
 

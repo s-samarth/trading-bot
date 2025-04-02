@@ -1,30 +1,74 @@
-# trading-bot
-I Aim to make a completely automated trading bot which is going to make a lot of money.
+# Trading Bot
 
-Currently Only Upstox API is fully functional and Up and Running.
-You will need to enable TOPT based Authentication in Upstox first and then
-you can fetch the UPSTOX_TOTP_SECRET(click for key under the TOTP QR while enabling)
-REDIRECT_URI can be set to any valid HTTPS link.
-To ensure selling of Delivery Based Securities Automatically in Upstox, Enable
-DDPI(read the terms and conditions first as it is risky) to avoid selling using TPIN.
+An automated trading bot that integrates with multiple trading platforms. Currently, only Upstox API integration is fully functional.
 
-Refer to TradingStrategy/demo.py for now
+## ⚠️ Critical Requirements
 
-Clone this Repo and follow the below instructions
+Before starting, ensure you have:
+1. Enabled TOTP-based Authentication in your Upstox account
+2. Saved the TOTP secret key (shown below/next to QR code during setup)
+3. Enabled DDPI (Delivery vs Payment Instruction) in Upstox for automated selling
+   - ⚠️ Read DDPI terms carefully as it involves risks
+   - Required to avoid TPIN for selling securities
+4. A valid HTTPS URL for REDIRECT_URI
 
-### Running Instructions
-1) Setup the environment for running
+## Quick Start
+
+1. Set up Python environment:
 ```bash
 conda create -n trading_env python=3.13.2
+conda activate trading_env
 pip install -r requirements.txt
 ```
 
-2) Setup Environment Variables, Enter your environment variables in SetupEnv.py and run
-```python
-python SetupEnv.py
+2. Configure Upstox credentials:
+```bash
+cp config/secrets/upstox.template.json config/secrets/upstox.json
 ```
 
-3) Run python main.py
+Edit `config/secrets/upstox.json`:
+```json
+{
+    "api_key": "your_api_key",
+    "api_secret": "your_api_secret",
+    "redirect_uri": "your_redirect_uri",
+    "mobile_number": "your_mobile",
+    "totp_secret": "your_totp_secret",
+    "mpin": "your_mpin",
+    "postback_url": "optional_postback_url",
+    "sandbox_access_token": "optional_sandbox_token"
+}
 ```
-python main.py
+
+3. Run setup:
+```bash
+python SetupEnv.py
 ```
+```
+
+4. Start the bot:
+```bash
+cd TradingStrategy
+python demo.py
+```
+
+## Features
+
+- ✅ Upstox API integration
+- ✅ Automated ChromeDriver management
+- 🚧 Zerodha integration (coming soon)
+- 🚧 Angel One integration (coming soon)
+- Secure configuration management
+- Telegram notifications
+- Automated trading strategies
+
+## Security
+
+- Never commit credentials to git
+- `.env` and `config/secrets/*.json` are gitignored
+- Only template files are committed
+
+## License
+
+MIT License - see LICENSE file for details
+
