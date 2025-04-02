@@ -18,29 +18,31 @@ class TradingStrategyData(BaseModel):
     )
     ltp: Decimal = Field(..., description="The last traded price of the stock.")
     buy_price: Decimal = Field(..., description="The price at which to buy the stock.")
-    sell_price: Decimal = Field(..., description="The price at which to sell the stock.")
+    sell_price: Decimal = Field(
+        ..., description="The price at which to sell the stock."
+    )
     quantity: int = Field(..., description="The number of shares to trade.")
     transaction_type: Optional[BaseTransactionType] = Field(
         default=None, description="The type of transaction (BUY/SELL)."
     )
 
-    @field_validator('ltp', 'buy_price', 'sell_price')
+    @field_validator("ltp", "buy_price", "sell_price")
     @classmethod
     def validate_prices(cls, v):
         if v <= 0:
             raise ValueError("Prices must be positive numbers")
         return v
 
-    @field_validator('quantity')
+    @field_validator("quantity")
     @classmethod
     def validate_quantity(cls, v):
         if v <= 0:
             raise ValueError("Quantity must be a positive number")
         return v
 
-    @field_validator('sell_price')
+    @field_validator("sell_price")
     @classmethod
     def validate_sell_price(cls, v, info):
-        if 'buy_price' in info.data and v <= info.data['buy_price']:
+        if "buy_price" in info.data and v <= info.data["buy_price"]:
             raise ValueError("Sell price must be greater than buy price")
         return v

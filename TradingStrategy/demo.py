@@ -19,19 +19,22 @@ from API.Upstox.TradeExecutor import OrderAPI, OrderAPIv3, PlaceOrderData
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
+
 class APIVersion(str, Enum):
     """Supported API versions for order placement."""
+
     V2 = "v2"
     V3 = "v3"
+
 
 @dataclass
 class TradingConfig:
     """Configuration for trading parameters."""
+
     trading_symbol: TradingSymbol
     buy_price: Decimal
     sell_price: Decimal
@@ -49,8 +52,9 @@ class TradingConfig:
             ltp=ltp,
             buy_price=self.buy_price,
             sell_price=self.sell_price,
-            quantity=self.quantity
+            quantity=self.quantity,
         )
+
 
 def simple_trading_strategy(
     config: TradingConfig,
@@ -58,11 +62,11 @@ def simple_trading_strategy(
 ) -> TradingStrategyData:
     """
     A simple trading strategy which buys if LTP is less than buy price and sells if LTP is greater than sell price.
-    
+
     Args:
         config: Trading configuration parameters
         ltp: The last traded price of the stock
-        
+
     Returns:
         TradingStrategyData: The trade details containing transaction type and other information
     """
@@ -75,11 +79,16 @@ def simple_trading_strategy(
         logger.info(f"BUY signal triggered: LTP {ltp} < Buy Price {config.buy_price}")
     elif ltp > config.sell_price:
         trade_details.transaction_type = BaseTransactionType.SELL
-        logger.info(f"SELL signal triggered: LTP {ltp} > Sell Price {config.sell_price}")
+        logger.info(
+            f"SELL signal triggered: LTP {ltp} > Sell Price {config.sell_price}"
+        )
     else:
-        logger.info(f"No trade signal: LTP {ltp} within range [{config.buy_price}, {config.sell_price}]")
+        logger.info(
+            f"No trade signal: LTP {ltp} within range [{config.buy_price}, {config.sell_price}]"
+        )
 
     return trade_details
+
 
 def place_order(
     trade_details: TradingStrategyData,
@@ -88,12 +97,12 @@ def place_order(
 ) -> Optional[Dict[str, str]]:
     """
     Places an order based on the trade details.
-    
+
     Args:
         trade_details: The trade details containing transaction type and other information
         config: Trading configuration including API version preference
         access_token: Optional access token for the trading API
-        
+
     Returns:
         Optional[Dict[str, str]]: Dictionary containing order IDs if order was placed, None otherwise
     """
@@ -120,66 +129,59 @@ def place_order(
             order_response = order_api.place_order(order_data=order_data)
             order_ids = {"order_id": order_response["data"]["order_id"]}
             logger.info(f"V2 order placed successfully: {order_ids}")
-        
+
         return order_ids
-        
+
     except Exception as e:
         logger.error(f"Error placing orders: {str(e)}")
         raise
 
+
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='Trading Strategy Demo')
+    parser = argparse.ArgumentParser(description="Trading Strategy Demo")
     parser.add_argument(
-        '--sandbox',
-        action='store_true',
-        help='Use sandbox environment for testing (default: True)'
+        "--sandbox",
+        action="store_true",
+        help="Use sandbox environment for testing (default: True)",
     )
     parser.add_argument(
-        '--live',
-        action='store_true',
-        help='Use live environment for trading (default: False)'
+        "--live",
+        action="store_true",
+        help="Use live environment for trading (default: False)",
     )
     parser.add_argument(
-        '--api-version',
-        choices=['v2', 'v3'],
-        default='v2',
-        help='API version to use (default: v2)'
+        "--api-version",
+        choices=["v2", "v3"],
+        default="v2",
+        help="API version to use (default: v2)",
     )
     parser.add_argument(
-        '--symbol',
-        choices=['IDEA', 'HDFCBANK'],
-        default='IDEA',
-        help='Trading symbol to use (default: IDEA)'
+        "--symbol",
+        choices=["IDEA", "HDFCBANK"],
+        default="IDEA",
+        help="Trading symbol to use (default: IDEA)",
     )
     parser.add_argument(
-        '--buy-price',
-        type=float,
-        required=True,
-        help='Buy price threshold'
+        "--buy-price", type=float, required=True, help="Buy price threshold"
     )
     parser.add_argument(
-        '--sell-price',
-        type=float,
-        required=True,
-        help='Sell price threshold'
+        "--sell-price", type=float, required=True, help="Sell price threshold"
     )
     parser.add_argument(
-        '--quantity',
-        type=int,
-        default=2,
-        help='Number of shares to trade (default: 2)'
+        "--quantity", type=int, default=2, help="Number of shares to trade (default: 2)"
     )
-    
+
     args = parser.parse_args()
-    
+
     # Handle sandbox/live environment selection
     if args.live:
         args.sandbox = False
     elif not args.sandbox and not args.live:
         args.sandbox = True  # Default to sandbox mode
-    
+
     return args
+
 
 def main():
     """Main function to demonstrate the trading strategy."""
@@ -199,8 +201,10 @@ def main():
         # Fetch LTP of selected symbol
         trading_symbol = getattr(TradingSymbol, args.symbol)
         market_quote = MarketQuoteData(access_token=access_token)
-        ltp_data = market_quote.get_ltp(trading_symbol=trading_symbol, exchange=BaseExchange.NSE)
-        
+        ltp_data = market_quote.get_ltp(
+            trading_symbol=trading_symbol, exchange=BaseExchange.NSE
+        )
+
         key = f"{BaseExchange.NSE}_{Segment.EQUITY}:{trading_symbol}"
         ltp = Decimal(str(ltp_data["data"][key]["last_price"]))
         logger.info(f"Current LTP of {trading_symbol}: {ltp}")
@@ -212,22 +216,25 @@ def main():
             sell_price=Decimal(str(args.sell_price)),
             quantity=args.quantity,
             api_version=APIVersion(args.api_version),
-            use_sandbox=args.sandbox
+            use_sandbox=args.sandbox,
         )
 
         # Run strategy
         logger.info(f"\nRunning strategy with API version {config.api_version}")
         trade_details = simple_trading_strategy(config, ltp)
         logger.info(f"Trade details: {trade_details}")
-        
+
         if trade_details.transaction_type:
             # Uncomment to actually place orders
             # place_order(trade_details, config, access_token)
-            logger.info(f"Order placement skipped (commented out) - would use {config.api_version} API")
+            logger.info(
+                f"Order placement skipped (commented out) - would use {config.api_version} API"
+            )
 
     except Exception as e:
         logger.error(f"Error in main execution: {str(e)}")
         raise
+
 
 if __name__ == "__main__":
     main()

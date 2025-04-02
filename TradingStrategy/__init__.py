@@ -17,13 +17,13 @@ from .StrategyData import TradingStrategyData
 from .ApiConstantsMapping import UpstoxConstantsMapping
 
 __all__ = [
-    'TradingSymbol',
-    'BaseExchange',
-    'BaseTransactionType',
-    'BaseProductType',
-    'BaseOrderType',
-    'TradingStrategyData',
-    'UpstoxConstantsMapping',
+    "TradingSymbol",
+    "BaseExchange",
+    "BaseTransactionType",
+    "BaseProductType",
+    "BaseOrderType",
+    "TradingStrategyData",
+    "UpstoxConstantsMapping",
 ]
 
-__version__ = '0.0.0'
+__version__ = "0.0.0"

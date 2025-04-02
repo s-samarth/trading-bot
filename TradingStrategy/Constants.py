@@ -4,6 +4,7 @@ from typing import Dict, ClassVar
 
 class TradingSymbol(StrEnum):
     """Supported trading symbols."""
+
     IDEA = "IDEA"
     HDFCBANK = "HDFCBANK"
 
@@ -15,6 +16,7 @@ class TradingSymbol(StrEnum):
 
 class BaseExchange(StrEnum):
     """Supported exchanges."""
+
     NSE = "NSE"
     BSE = "BSE"
 
@@ -35,6 +37,7 @@ class BaseExchange(StrEnum):
 
 class BaseTransactionType(StrEnum):
     """Supported transaction types."""
+
     BUY = "BUY"
     SELL = "SELL"
 
@@ -55,6 +58,7 @@ class BaseTransactionType(StrEnum):
 
 class BaseProductType(StrEnum):
     """Supported product types."""
+
     INTRADAY = "INTRADAY"
     DELIVERY = "DELIVERY"
     COVERORDER = "COVERORDER"
@@ -79,6 +83,7 @@ class BaseProductType(StrEnum):
 
 class BaseOrderType(StrEnum):
     """Supported order types."""
+
     MARKET = "MARKET"
     LIMIT = "LIMIT"
     STOPLOSS = "STOPLOSS"

@@ -7,7 +7,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 import TradingStrategy.Constants as BaseConstants
 import API.Upstox.Constants as UpstoxConstants
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class UpstoxConstantsMapping:
     """
@@ -18,18 +19,20 @@ class UpstoxConstantsMapping:
     _mapping_cache: ClassVar[dict] = {}
 
     @classmethod
-    def _get_cached_mapping(cls, base_enum: Type[T], upstox_enum: Type[T], name: str) -> T:
+    def _get_cached_mapping(
+        cls, base_enum: Type[T], upstox_enum: Type[T], name: str
+    ) -> T:
         """
         Get cached mapping or create new one.
-        
+
         Args:
             base_enum: Base enum class
             upstox_enum: Upstox enum class
             name: Name of the enum value
-            
+
         Returns:
             Mapped Upstox enum value
-            
+
         Raises:
             AttributeError: If mapping doesn't exist
         """
@@ -38,7 +41,9 @@ class UpstoxConstantsMapping:
             try:
                 cls._mapping_cache[cache_key] = getattr(upstox_enum, name)
             except AttributeError:
-                raise AttributeError(f"No mapping found for {name} in {upstox_enum.__name__}")
+                raise AttributeError(
+                    f"No mapping found for {name} in {upstox_enum.__name__}"
+                )
         return cls._mapping_cache[cache_key]
 
     @classmethod
@@ -47,42 +52,38 @@ class UpstoxConstantsMapping:
     ) -> UpstoxConstants.TransactionType:
         """
         Maps the transaction type from Base constants to Upstox constants.
-        
+
         Args:
             transaction_type: The transaction type from Base constants
-            
+
         Returns:
             The mapped transaction type from Upstox constants
-            
+
         Raises:
             AttributeError: If mapping doesn't exist
         """
         return cls._get_cached_mapping(
             BaseConstants.BaseTransactionType,
             UpstoxConstants.TransactionType,
-            transaction_type.name
+            transaction_type.name,
         )
 
     @classmethod
-    def exchange(
-        cls, exchange: BaseConstants.BaseExchange
-    ) -> UpstoxConstants.Exchange:
+    def exchange(cls, exchange: BaseConstants.BaseExchange) -> UpstoxConstants.Exchange:
         """
         Maps the exchange from Base constants to Upstox constants.
-        
+
         Args:
             exchange: The exchange from Base constants
-            
+
         Returns:
             The mapped exchange from Upstox constants
-            
+
         Raises:
             AttributeError: If mapping doesn't exist
         """
         return cls._get_cached_mapping(
-            BaseConstants.BaseExchange,
-            UpstoxConstants.Exchange,
-            exchange.name
+            BaseConstants.BaseExchange, UpstoxConstants.Exchange, exchange.name
         )
 
     @classmethod
@@ -91,20 +92,20 @@ class UpstoxConstantsMapping:
     ) -> UpstoxConstants.ProductType:
         """
         Maps the product type from Base constants to Upstox constants.
-        
+
         Args:
             product_type: The product type from Base constants
-            
+
         Returns:
             The mapped product type from Upstox constants
-            
+
         Raises:
             AttributeError: If mapping doesn't exist
         """
         return cls._get_cached_mapping(
             BaseConstants.BaseProductType,
             UpstoxConstants.ProductType,
-            product_type.name
+            product_type.name,
         )
 
     @classmethod
@@ -113,20 +114,18 @@ class UpstoxConstantsMapping:
     ) -> UpstoxConstants.OrderType:
         """
         Maps the order type from Base constants to Upstox constants.
-        
+
         Args:
             order_type: The order type from Base constants
-            
+
         Returns:
             The mapped order type from Upstox constants
-            
+
         Raises:
             AttributeError: If mapping doesn't exist
         """
         return cls._get_cached_mapping(
-            BaseConstants.BaseOrderType,
-            UpstoxConstants.OrderType,
-            order_type.name
+            BaseConstants.BaseOrderType, UpstoxConstants.OrderType, order_type.name
         )
 
 
@@ -135,8 +134,12 @@ def test_mappings() -> None:
     try:
         # Test transaction type mapping
         transaction_type = BaseConstants.BaseTransactionType.SELL
-        mapped_transaction_type = UpstoxConstantsMapping.transaction_type(transaction_type)
-        print(f"✅ Transaction Type Mapping: {transaction_type} -> {mapped_transaction_type}")
+        mapped_transaction_type = UpstoxConstantsMapping.transaction_type(
+            transaction_type
+        )
+        print(
+            f"✅ Transaction Type Mapping: {transaction_type} -> {mapped_transaction_type}"
+        )
 
         # Test exchange mapping
         exchange = BaseConstants.BaseExchange.BSE
