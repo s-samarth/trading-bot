@@ -4,6 +4,14 @@ An automated trading bot that integrates with multiple trading platforms includi
 
 > **⚠️ Important Note**: Currently, only the Upstox API integration is fully functional and operational. Other platform integrations are under development.
 
+> **🔐 Critical Requirements for Upstox Integration**:
+> 1. You MUST enable TOTP-based Authentication in your Upstox account first
+> 2. When enabling TOTP, look for the key shown below/next to the QR code - this is your `UPSTOX_TOTP_SECRET`
+> 3. For automated selling of Delivery Based Securities, you need to enable DDPI (Delivery vs Payment Instruction) in Upstox
+>    - ⚠️ Please read DDPI terms and conditions carefully as it involves risks
+>    - This is required to avoid using TPIN for selling securities
+> 4. The `REDIRECT_URI` can be set to any valid HTTPS link
+
 ## Features
 
 - ✅ Upstox API integration (fully functional)
