@@ -13,6 +13,7 @@ from TradingStrategy.Constants import (
     ExecutionStatus,
     BaseSegment,
     BaseOrderType,
+    TradeAction,
 )
 
 
@@ -24,6 +25,7 @@ class BaseStrategyInput(BaseModel):
     trading_symbol: TradingSymbol = Field(
         ..., description="The trading symbol for the stock."
     )
+    ltp: Decimal = Field(..., description="The last traded price of the stock.")
     exchange: BaseExchange = Field(
         default=BaseExchange.NSE, description="The exchange where the stock is traded."
     )
@@ -37,6 +39,9 @@ class BaseStrategyInput(BaseModel):
     )
     order_type: BaseOrderType = Field(
         default=BaseOrderType.LIMIT, description="The type of order (MARKET/LIMIT/etc)."
+    )
+    broker: Broker = Field(
+        default=Broker.UPSTOX, description="The broker used for the trade."
     )
 
 
@@ -54,10 +59,11 @@ class BaseStrategyOutput(BaseModel):
     trade_status: TradeStatus = Field(
         ..., description="The status of the trade (PROFIT/LOSS/HOLD/NOT_TRIGGERED)."
     )
-    broker: Broker = Field(..., description="The broker used for the trade.")
-    order_status: Optional[BaseOrderStatus] = Field(
-        ..., description="The status of the order (OPEN/CLOSED/etc)."
+    trade_action: TradeAction = Field(
+        ..., description="The action taken for the trade (BUY/SELL/HOLD/NO_ACTION)."
     )
+    quantity: Optional[int] = Field(..., description="The quantity of stocks traded.")
+    broker: Broker = Field(..., description="The broker used for the trade.")
     execution_status: Optional[ExecutionStatus] = Field(
         None, description="The status of the execution (SUCCESS/FAILURE/etc)."
     )

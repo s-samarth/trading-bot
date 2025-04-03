@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 from pydantic import BaseModel, Field
 
+
 from config.Config import Config
 from API.Upstox.TradeExecutor import OrderAPIv3 as UpstoxOrderAPI
 from API.Upstox.TradeExecutor import PlaceOrderData as UpstoxPlaceOrderData
@@ -32,23 +33,290 @@ from TradingStrategy.Constants import (
     ExectionFrequencyMode,
     ExecutionStatus,
     StrategyName,
+    TradingMode,
+    TradeAction,
 )
 
 
-class PriceData(BaseModel):
-    """
-    This class is used to define the price data structure for a trading strategy.
-    """
-
-    ltp: Decimal = Field(..., description="Last traded price of the stock.")
-    buy_price: Decimal = Field(..., description="Buy price of the stock.")
-    target_price: Decimal = Field(
-        ..., description="Target price for selling the stock."
-    )
-    stop_loss_price: Decimal = Field(..., description="Stop loss price for the stock.")
-
-
 class StrategyTemplate(ABC):
+    """
+    This is a template for creating a trading strategy.
+    It includes methods for generating buy/sell signals,
+    and executing the strategy. The strategy should be implemented
+    by inheriting this class and overriding the abstract methods.
+
+    Parameters:
+    - strategy_input: BaseStrategyInput
+        The input parameters for the trading strategy.
+    - strategy_params: BaseStrategyParams
+        The parameters for the trading strategy.
+    - mode: TradingMode
+        The mode of trading (BACKTEST/LIVE/SANDBOX).
+    - broker: Broker
+        The broker to be used for trading.
+    """
+
+    def __init__(
+        self,
+        strategy_input: BaseStrategyInput,
+        strategy_params: BaseStrategyParams,
+        mode: TradingMode = TradingMode.BACKTEST,
+    ):
+
+        self.strategy_name = self.__class__.__name__
+        self.strategy_input = strategy_input
+        self.strategy_params = strategy_params
+        self.mode = mode
+        self.broker = strategy_input.broker
+        self.trade_status = TradeStatus.NOT_TRIGGERED
+
+    @abstractmethod
+    def get_buy_price(self) -> Decimal:
+        """
+        Calculate the buy price based on your strategy.
+        This is an abstract method and should be implemented by the subclass.
+        """
+        pass
+
+    @abstractmethod
+    def get_buy_quantity(self, buy_price: Decimal) -> int:
+        """
+        Calculate the quantity to buy based on the allowed capital and strategy
+        This is an abstract method and should be implemented by the subclass.
+        """
+        pass
+
+    def execute(self) -> BaseStrategyOutput:
+        """
+        Execute the trading strategy.
+        This method should be called to execute the strategy.
+        """
+        strategy_output = BaseStrategyOutput(
+            trading_symbol=self.strategy_input.trading_symbol,
+            exchange=self.strategy_input.exchange,
+            trade_action=TradeAction.NO_ACTION,
+            broker=self.broker,
+        )
+        if self.trade_status == TradeStatus.NOT_TRIGGERED:
+            strategy_output = self.buy(strategy_output)
+
+        elif self.trade_status == TradeStatus.HOLD:
+            strategy_output = self.sell()
+
+        else:
+            raise ValueError(
+                f"Cannot execute strategy for trade status: {self.trade_status}"
+            )
+
+        return strategy_output
+
+    def buy(self, strategy_output: BaseStrategyOutput) -> BaseStrategyOutput:
+        """
+        Execute the buy order.
+        This method should be called to execute the buy order.
+        """
+        ltp = self.strategy_input.ltp
+        buy_signal = self.buy_signal(ltp)
+
+        if buy_signal:
+            # Buy signal generated
+            buy_price = self.get_buy_price()
+            quantity = self.get_buy_quantity(buy_price)
+            trade_value = buy_price * quantity
+            brokerage_charges = self.get_brokerage_charges(
+                buy_price, quantity, transaction_type=BaseTransactionType.BUY
+            )
+
+            # Validate if the margin is sufficient for the trade
+            if not self.validate_margin(trade_value, brokerage_charges):
+                strategy_output.execution_status = ExecutionStatus.FAILURE
+                strategy_output.information = "Insufficient margin for trade."
+                return strategy_output
+
+            # Place the order
+            order_id = self.place_order(
+                transaction_type=BaseTransactionType.BUY,
+                price=buy_price,
+                quantity=quantity,
+            )
+            strategy_output.trade_action = TradeAction.BUY
+            strategy_output.quantity = quantity
+            strategy_output.order_id = order_id
+            strategy_output.information = "Buy order placed successfully."
+            strategy_output.execution_status = ExecutionStatus.SUCCESS
+
+        return strategy_output
+
+    def sell(self, strategy_output: BaseStrategyOutput) -> BaseStrategyOutput:
+        """
+        Execute the sell order.
+        This method should be called to execute the sell order.
+        """
+        strategy_output.trade_action = TradeAction.HOLD
+        ltp = self.strategy_input.ltp
+        # Check for sell signals
+
+        sell_signal = self.sell_signal(ltp, self.get_buy_price())
+        if sell_signal:
+            # Sell signal generated
+            sell_price = None
+            quantity = None
+
+            # Place the order
+            order_id = self.place_order(
+                transaction_type=BaseTransactionType.SELL,
+                price=sell_price,
+                quantity=quantity,
+            )
+
+            strategy_output.trade_action = TradeAction.SELL
+            strategy_output.quantity = quantity
+            strategy_output.order_id = order_id
+            strategy_output.information = "Sell order placed successfully."
+            strategy_output.execution_status = ExecutionStatus.SUCCESS
+
+        return strategy_output
+
+    def place_order(
+        self, transaction_type: BaseTransactionType, price: Decimal, quantity: int
+    ) -> str:
+        """
+        Place an order using the OrderAPI.
+        This is a placeholder function and should be replaced with actual API call.
+        """
+        self.regenerate_access_token_if_expired()
+        if self.broker == Broker.UPSTOX:
+            access_token = (
+                self.sandbox_access_token if self.is_sandbox else self.access_token
+            )
+            place_order_data = UpstoxPlaceOrderData(
+                trading_symbol=self.strategy_input.trading_symbol,
+                exchange=UpstoxConstantsMapping.exchange(self.strategy_input.exchange),
+                transaction_type=UpstoxConstantsMapping.transaction_type(
+                    transaction_type
+                ),
+                product_type=UpstoxConstantsMapping.product_type(
+                    self.strategy_input.product_type
+                ),
+                order_type=UpstoxConstantsMapping.order_type(
+                    self.strategy_input.order_type
+                ),
+                price=price,
+                quantity=quantity,
+            )
+            order = UpstoxOrderAPI(
+                access_token, sandbox_mode=self.is_sandbox
+            ).place_order(
+                place_order_data=place_order_data,
+            )
+            try:
+                order_id = order["data"]["order_id"]
+                return order_id
+            except:
+                return None
+
+        else:
+            raise NotImplementedError(
+                "Order placement is not implemented for this broker."
+            )
+
+    def get_target_price(self, buy_price: Decimal) -> Decimal:
+        """
+        Calculate the target price based on the buy price.
+        """
+        target_price = buy_price * (1 + self.strategy_params.target_percent / 100)
+        return target_price
+
+    def get_stop_loss_price(self, buy_price: Decimal) -> Decimal:
+        """
+        Calculate the stop loss price based on the buy price.
+        """
+        stop_loss_price = buy_price * (1 - self.strategy_params.stop_loss_percent / 100)
+        return stop_loss_price
+
+    def buy_signal(self, ltp: Decimal) -> bool:
+        """
+        Generate a buy signal based on the last traded price (LTP).
+        """
+        buy_price = self.get_buy_price()
+        tolerance = (self.strategy_params.tolerance_percent / 100) * buy_price
+        if ltp < buy_price + tolerance:
+            return True
+        return False
+
+    def sell_signal(self, ltp: Decimal, buy_price: Decimal) -> bool:
+        """
+        Generate a sell signal for Trigger Price or Stop Loss Price
+        based on the last traded price (LTP) and buy price.
+        """
+        sell_price_target = self.get_target_price(buy_price)
+        target_tolerance = (
+            self.strategy_params.tolerance_percent / 100
+        ) * sell_price_target
+        if ltp > sell_price_target - target_tolerance:
+            return True
+
+        sell_price_stop_loss = self.get_stop_loss_price(buy_price)
+        stop_loss_tolerance = (
+            self.strategy_params.tolerance_percent / 100
+        ) * sell_price_stop_loss
+        if ltp < sell_price_stop_loss + stop_loss_tolerance:
+            return True
+
+        return False
+
+    def get_brokerage_charges(
+        self,
+        price: Decimal,
+        quantity: int,
+        transaction_type: BaseTransactionType,
+    ) -> Decimal:
+        """
+        Calculate the brokerage charges based on the buy price.
+        This is a placeholder function and should be replaced with actual API call.
+        """
+        self.regenerate_access_token_if_expired()
+        if self.broker == Broker.UPSTOX:
+            brokerage_data = BrokerageData(self.access_token).get_brokerage(
+                trading_symbol=self.strategy_input.trading_symbol,
+                exchange=UpstoxConstantsMapping.exchange(self.strategy_input.exchange),
+                transaction_type=UpstoxConstantsMapping.transaction_type(
+                    transaction_type
+                ),
+                price=price,
+                quantity=quantity,
+            )
+            if brokerage_data["status"] != "success":
+                return Decimal(25.0)  # Default brokerage charges
+
+            brokerage_charges = brokerage_data["data"]["charges"]["total"]
+            return Decimal(brokerage_charges)
+        else:
+            raise NotImplementedError(
+                "Brokerage charges calculation is not implemented for this broker."
+            )
+
+    def validate_margin(self, trade_value: Decimal, brokerage_charges: Decimal) -> bool:
+        """
+        Validate if the margin is sufficient for the trade.
+        This is a placeholder function and should be replaced with actual API call.
+        """
+        self.regenerate_access_token_if_expired()
+        if self.broker == Broker.UPSTOX:
+            margin_data = UserData(self.access_token).get_fund_and_margin()
+            if margin_data["status"] != "success":
+                return False
+            available_margin = margin_data["data"]["equity"]["available_margin"]
+            if available_margin < trade_value + brokerage_charges:
+                return False
+            return True
+        else:
+            raise NotImplementedError(
+                "Margin validation is not implemented for this broker."
+            )
+
+
+class StrategyTemplateV0(ABC):
     """
     This is a template for creating a trading strategy.
     It includes methods for executing the strategy,
@@ -94,6 +362,7 @@ class StrategyTemplate(ABC):
         min_max_execution_frequency: Optional[Tuple[Decimal, Decimal]] = (1 / 24, 30),
         logging_mode: str = "append",  # "append" or "overwrite"
     ):
+        self.strategy_name = self.__class__.__name__
         self.strategy_input = strategy_input
         self.strategy_params = strategy_params
         self.is_sandbox = is_sandbox
@@ -126,15 +395,6 @@ class StrategyTemplate(ABC):
         """
         Calculate the quantity to buy based on the allowed capital and strategy
         This is an abstract method and should be implemented by the subclass.
-        """
-        pass
-
-    @abstractmethod
-    def strategy_name(self, name: StrategyName) -> str:
-        """
-        Get the name of the strategy.
-        This is an abstract method and should be implemented by the subclass.
-        Just return the name of the strategy, from the StrategyName Enum.
         """
         pass
 
@@ -183,7 +443,7 @@ class StrategyTemplate(ABC):
                 "Invalid execution frequency mode. Use 'constant' or 'dynamic'."
             )
 
-    def execute_strategy(self) -> Tuple[BaseStrategyOutput, PriceData]:
+    def execute_strategy(self) -> Tuple[BaseStrategyOutput]:
         """
         Execute the trading strategy.
         """
@@ -867,3 +1127,16 @@ class StrategyTemplate(ABC):
                 os.makedirs(results_dir)
 
         return results_dir
+
+
+class PriceData(BaseModel):
+    """
+    This class is used to define the price data structure for a trading strategy.
+    """
+
+    ltp: Decimal = Field(..., description="Last traded price of the stock.")
+    buy_price: Decimal = Field(..., description="Buy price of the stock.")
+    target_price: Decimal = Field(
+        ..., description="Target price for selling the stock."
+    )
+    stop_loss_price: Decimal = Field(..., description="Stop loss price for the stock.")

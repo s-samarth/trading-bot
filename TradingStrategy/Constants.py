@@ -1,6 +1,27 @@
 from enum import StrEnum
 
 
+class TradingMode(StrEnum):
+    BACKTEST = "BACKTEST"
+    LIVE = "LIVE"
+    SANDBOX = "SANDBOX"
+
+    def description(self) -> str:
+        descriptions = {
+            "BACKTEST": "Represents backtesting mode.",
+            "LIVE": "Represents live trading mode.",
+            "SANDBOX": "Represents sandbox mode for testing.",
+        }
+        return descriptions.get(self.value, "Unknown Trading Mode")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all trading mode descriptions.
+        """
+        return {mode.value: mode.description() for mode in cls}
+
+
 class Broker(StrEnum):
     ZERODHA = "ZERODHA"
     UPSTOX = "UPSTOX"
@@ -39,6 +60,29 @@ class TradingSymbol(StrEnum):
         Returns a dictionary of all trading symbol descriptions.
         """
         return {symbol.value: symbol.description() for symbol in cls}
+
+
+class TradeAction(StrEnum):
+    BUY = "BUY"
+    SELL = "SELL"
+    HOLD = "HOLD"
+    NO_ACTION = "NO_ACTION"
+
+    def description(self) -> str:
+        descriptions = {
+            "BUY": "Indicates a buy action.",
+            "SELL": "Indicates a sell action.",
+            "HOLD": "Indicates a hold action.",
+            "NO_ACTION": "Indicates no action taken.",
+        }
+        return descriptions.get(self.value, "Unknown Trade Action")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all trade action descriptions.
+        """
+        return {action.value: action.description() for action in cls}
 
 
 class TradeStatus(StrEnum):
