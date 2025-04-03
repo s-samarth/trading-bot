@@ -4,13 +4,13 @@ from enum import StrEnum
 class TradingMode(StrEnum):
     BACKTEST = "BACKTEST"
     LIVE = "LIVE"
-    SANDBOX = "SANDBOX"
+    SIMULATION = "SIMULATION"
 
     def description(self) -> str:
         descriptions = {
             "BACKTEST": "Represents backtesting mode.",
             "LIVE": "Represents live trading mode.",
-            "SANDBOX": "Represents sandbox mode for testing.",
+            "SIMULATION": "Represents simulation mode for testing.",
         }
         return descriptions.get(self.value, "Unknown Trading Mode")
 
@@ -85,18 +85,35 @@ class TradeAction(StrEnum):
         return {action.value: action.description() for action in cls}
 
 
-class TradeStatus(StrEnum):
+class TradeResult(StrEnum):
     PROFIT = "PROFIT"
     LOSS = "LOSS"
-    HOLD = "HOLD"
-    NOT_TRIGGERED = "NOT_TRIGGERED"
 
     def description(self) -> str:
         descriptions = {
             "PROFIT": "Indicates a profitable trade.",
             "LOSS": "Indicates a loss-making trade.",
-            "HOLD": "Indicates a trade that is currently held.",
-            "NOT_TRIGGERED": "Indicates a trade that has not been triggered.",
+        }
+        return descriptions.get(self.value, "Unknown Trade Status")
+
+    @classmethod
+    def all_descriptions(cls):
+        """
+        Returns a dictionary of all trade status descriptions.
+        """
+        return {status.value: status.description() for status in cls}
+
+
+class TradeStatus(StrEnum):
+    NOT_TRIGGERED = "NOT_TRIGGERED"
+    HOLDING = "HOLDING"
+    EXIT = "EXIT"
+
+    def description(self) -> str:
+        descriptions = {
+            "NOT_TRIGGERED": "Trade has not been triggered.",
+            "HOLDING": "Trade is currently being held.",
+            "EXIT": "Trade has been exited.",
         }
         return descriptions.get(self.value, "Unknown Trade Status")
 
@@ -281,20 +298,3 @@ class ExecutionStatus(StrEnum):
         Returns a dictionary of all execution status descriptions.
         """
         return {status.value: status.description() for status in cls}
-
-
-class StrategyName(StrEnum):
-    MOCK_STRATEGY = "MockStrategy"
-
-    def description(self) -> str:
-        descriptions = {
-            "MockStrategy": "A mock trading strategy for demonstration purposes.",
-        }
-        return descriptions.get(self.value, "Unknown Strategy Name")
-
-    @classmethod
-    def all_descriptions(cls):
-        """
-        Returns a dictionary of all strategy name descriptions.
-        """
-        return {strategy.value: strategy.description() for strategy in cls}
