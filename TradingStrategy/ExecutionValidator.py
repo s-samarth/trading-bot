@@ -76,3 +76,20 @@ class ExecutionValidator:
             bool: True if the trade quantity is valid, False otherwise.
         """
         pass
+
+
+class ExecutionValidatorUpstox:
+    """
+    This class is used to validate the execution of the trading strategy
+    specifically for Upstox.
+    It includes methods for checking if the strategy is actually Executed,
+    without any errors.
+    """
+
+    def __init__(self, strategy_output: BaseStrategyOutput):
+        """
+        Initializes the ExecutionValidator with the strategy output.
+        Args:
+            strategy_output (BaseStrategyOutput): The output of the trading strategy.
+        """
+        self.strategy_output = strategy_output

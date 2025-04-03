@@ -55,6 +55,7 @@ class StrategyTemplate(ABC):
             TradeStatus.NOT_TRIGGERED
         )  # To be changed only by the Strategy Manager
         self.quantity = None  # To be changed only by the Strategy Validator in case of only partial buy
+        self.holding_quantity = 0  # To be changed only by the strategy manager
 
     @abstractmethod
     def get_buy_price(self) -> float:
@@ -147,6 +148,9 @@ class StrategyTemplate(ABC):
         strategy_output.quantity = (
             quantity  # Set the quantity in the output even while holding
         )
+        if quantity > self.holding_quantity:
+            return strategy_output
+
         sell_signal = self.sell_signal(ltp, buy_price)
         if sell_signal:
             # Sell signal generated
@@ -168,13 +172,10 @@ class StrategyTemplate(ABC):
             )
 
             strategy_output.trade_action = TradeAction.SELL
-            strategy_output.trade_result = sell_signal
             strategy_output.quantity = quantity
             strategy_output.trade_charges = brokerage_charges
             strategy_output.order_id = order_id
-            strategy_output.information = (
-                f"Sell order placed successfully. This trade gave a {sell_signal}"
-            )
+            strategy_output.information = f"Sell order placed successfully."
             strategy_output.execution_status = ExecutionStatus.SUCCESS
 
         return strategy_output

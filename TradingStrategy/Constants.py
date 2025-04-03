@@ -260,7 +260,7 @@ class BaseOrderStatus(StrEnum):
         return {status.value: status.description() for status in cls}
 
 
-class ExectionFrequencyMode(StrEnum):
+class ExecutionFrequencyMode(StrEnum):
     CONSTANT = "constant"
     DYNAMIC = "dynamic"
 

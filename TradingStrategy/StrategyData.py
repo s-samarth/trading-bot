@@ -25,7 +25,7 @@ class BaseStrategyInput(BaseModel):
     trading_symbol: TradingSymbol = Field(
         ..., description="The trading symbol for the stock."
     )
-    ltp: float = Field(..., description="The last traded price of the stock.")
+    ltp: float = Field(default=0.0, description="The last traded price of the stock.")
     exchange: BaseExchange = Field(
         default=BaseExchange.NSE, description="The exchange where the stock is traded."
     )
@@ -63,17 +63,11 @@ class BaseStrategyOutput(BaseModel):
         ..., description="The action taken for the trade (BUY/SELL/HOLD/NO_ACTION)."
     )
     quantity: Optional[int] = Field(None, description="The quantity of stocks traded.")
-    trade_result: Optional[TradeResult] = Field(
-        None, description="The status of the trade (PROFIT/LOSS)."
-    )
     trade_charges: Optional[float] = Field(
         None, description="The charges incurred for executing the trade."
     )
     execution_status: Optional[ExecutionStatus] = Field(
         None, description="The status of the execution (SUCCESS/FAILURE/etc)."
-    )
-    transaction_type: Optional[BaseTransactionType] = Field(
-        None, description="The type of transaction (BUY/SELL)."
     )
     order_id: Optional[str] = Field(
         None, description="The ID of the order placed for the trade."
