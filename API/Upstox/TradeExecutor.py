@@ -31,7 +31,7 @@ class PlaceOrderData(BaseModel):
     transaction_type: TransactionType = TransactionType.BUY
     product_type: ProductType = ProductType.DELIVERY
     exchange: Exchange = Exchange.NSE
-    order_type: OrderType = OrderType.MARKET
+    order_type: OrderType = OrderType.LIMIT
     validity: Validity = Validity.DAY
     price: float = (
         0  # The price at which the order is to be executed. For market orders, this is ignored.
