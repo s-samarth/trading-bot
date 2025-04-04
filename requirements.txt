@@ -2,6 +2,7 @@
 # $ conda create --name <env> --file <this file>
 # platform: osx-arm64
 # created-by: conda 24.11.3
+aiofiles=24.1.0=pypi_0
 annotated-types=0.7.0=pypi_0
 anyio=4.9.0=pypi_0
 appnope=0.1.4=pyhd8ed1ab_1
