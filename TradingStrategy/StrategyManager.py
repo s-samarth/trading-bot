@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import json
+import asyncio
 from typing import Optional, Tuple
 from datetime import datetime
 
@@ -14,6 +15,7 @@ from TradeLedger import TradeLedger
 from API.Upstox.UpstoxLogin import Login as UpstoxLogin
 from API.Upstox.Data import MarketQuoteData as UpstoxMarketQuoteData
 from TradingStrategy.Template import StrategyTemplate
+from TradingStrategy.StrategyLogger import AsyncStrategyLogger, SyncStrategyLogger
 from TradingStrategy.ExecutionValidator import ExecutionValidator
 from TradingStrategy.StrategyData import (
     BaseStrategyOutput,
@@ -128,7 +130,14 @@ class StrategyManager:
         This method is responsible for executing the trading strategy asynchronously,
         validating the execution, and handling any errors that may occur.
         """
-        raise NotImplementedError("Asynchronous execution is not implemented yet.")
+        if self.mode == TradingMode.LIVE:
+            await self.run_live_async()
+        elif self.mode == TradingMode.BACKTEST:
+            await self.run_backtest_async(max_iterations=100)
+        elif self.mode == TradingMode.SIMULATION:
+            await self.run_simulation_async(max_iterations=100)
+        else:
+            raise ValueError(f"Invalid trading mode: {self.mode}")
 
     def run_live(self):
         """
@@ -153,85 +162,194 @@ class StrategyManager:
         holding_quantity = (
             0  # Need to fetch the last holding quantity from the log file
         )
-        while True:
-            # Fetch LTP
-            ltp = self.fetch_ltp(
-                access_token=access_token,
-                exchange=self.strategy_input.exchange,
-                trading_symbol=self.strategy_input.trading_symbol,
-                trading_segment=self.strategy_input.segment,
-            )
+        try:
+            while True:
+                # Fetch LTP
+                ltp = self.fetch_ltp(
+                    access_token=access_token,
+                    exchange=self.strategy_input.exchange,
+                    trading_symbol=self.strategy_input.trading_symbol,
+                    trading_segment=self.strategy_input.segment,
+                )
 
-            # Set LTP in strategy input
-            self.strategy_input.ltp = ltp
+                # Set LTP in strategy input
+                self.strategy_input.ltp = ltp
 
-            # Re initialize the strategy with the updated LTP and parameters
-            self.strategy.strategy_params = self.get_strategy_params(ltp=ltp)
-            self.strategy.strategy_input = self.strategy_input
+                # Re initialize the strategy with the updated LTP and parameters
+                self.strategy.strategy_params = self.get_strategy_params(ltp=ltp)
+                self.strategy.strategy_input = self.strategy_input
 
-            self.strategy.holding_quantity = holding_quantity
+                self.strategy.holding_quantity = holding_quantity
 
-            if strategy_output is None:
-                strategy_output = self.strategy.execute()
-            else:
-                if strategy_output.trade_action == TradeAction.NO_ACTION:
-                    strategy_output = self.strategy.execute()
-                elif (
-                    strategy_output.trade_action == TradeAction.HOLD
-                    or strategy_output.trade_action == TradeAction.BUY
-                ):
-                    self.strategy.trade_status = TradeStatus.HOLDING
-                    strategy_output = self.strategy.execute()
-                elif strategy_output.trade_action == TradeAction.SELL:
-                    self.strategy.trade_status = TradeStatus.NOT_TRIGGERED
+                if strategy_output is None:
                     strategy_output = self.strategy.execute()
                 else:
-                    raise ValueError(
-                        f"Invalid trade action: {strategy_output.trade_action}"
+                    if strategy_output.trade_action == TradeAction.NO_ACTION:
+                        strategy_output = self.strategy.execute()
+                    elif (
+                        strategy_output.trade_action == TradeAction.HOLD
+                        or strategy_output.trade_action == TradeAction.BUY
+                    ):
+                        self.strategy.trade_status = TradeStatus.HOLDING
+                        strategy_output = self.strategy.execute()
+                    elif strategy_output.trade_action == TradeAction.SELL:
+                        self.strategy.trade_status = TradeStatus.NOT_TRIGGERED
+                        strategy_output = self.strategy.execute()
+                    else:
+                        raise ValueError(
+                            f"Invalid trade action: {strategy_output.trade_action}"
+                        )
+
+                # Validate the execution
+                execution_validator = ExecutionValidator(
+                    strategy_output=strategy_output,
+                )
+                if not execution_validator.validate():
+                    print("Execution validation failed.")
+                    time.sleep(self.error_cooldown_time)
+                    continue
+
+                # Change Holding quantity if needed
+                if strategy_output.trade_action == TradeAction.BUY:
+                    holding_quantity += strategy_output.quantity
+                elif strategy_output.trade_action == TradeAction.SELL:
+                    holding_quantity -= strategy_output.quantity
+
+                # Log the strategy output, implement the logging logic
+                self.log_strategy_output(strategy_output, ltp)
+
+                # Check if the strategy needs to go into cooldown mode
+                if self.cooldown_strategy():
+                    cooldown_days = self.strategy_cooldown_time // (24 * 60 * 60)
+                    print(
+                        f"Strategy is now going into cooldown mode for {cooldown_days} days."
                     )
+                    time.sleep(self.strategy_cooldown_time)
+                    continue
 
-            # Validate the execution
-            execution_validator = ExecutionValidator(
-                strategy_output=strategy_output,
-            )
-            if not execution_validator.validate():
-                print("Execution validation failed.")
-                time.sleep(self.error_cooldown_time)
-                continue
+                # Re Run after the wait time
+                if self.execution_frequency_mode == ExecutionFrequencyMode.CONSTANT:
+                    frequency = self.execution_frequency
+                elif self.execution_frequency_mode == ExecutionFrequencyMode.DYNAMIC:
+                    frequency = self.get_dynamic_execution_frequency(
+                        ltp=ltp,
+                        min_frequency=self.min_max_execution_frequency[0],
+                        max_frequency=self.min_max_execution_frequency[1],
+                    )
+                else:
+                    raise ValueError(
+                        f"Invalid execution frequency mode: {self.execution_frequency_mode}"
+                    )
+                wait_time = self.rerun_wait_time(frequency=frequency)
+                time.sleep(wait_time)
+        except Exception as e:
+            print(f"Unexpected error in run_livec: {e}")
+            time.sleep(self.error_cooldown_time)
 
-            # Change Holding quantity if needed
-            if strategy_output.trade_action == TradeAction.BUY:
-                holding_quantity += strategy_output.quantity
-            elif strategy_output.trade_action == TradeAction.SELL:
-                holding_quantity -= strategy_output.quantity
+    async def run_live_async(self):
+        """
+        Run the trading strategy in live mode asynchronously.
+        This method is responsible for executing the trading strategy asynchronously,
+        validating the execution, and handling any errors that may occur.
+        """
+        last_cooldown_time = self.get_last_cooldown_time()
+        cooldown_time_remaining = self.strategy_cooldown_time_remaining(
+            last_cooldown_time=last_cooldown_time
+        )
+        if cooldown_time_remaining:
+            await asyncio.sleep(cooldown_time_remaining)
 
-            # Log the strategy output, implement the logging logic
-            self.log_strategy_output(strategy_output, ltp)
+        # Fetch access token
+        access_token = await self.fetch_access_token_async()
 
-            # Check if the strategy needs to go into cooldown mode
-            if self.cooldown_strategy():
-                cooldown_days = self.strategy_cooldown_time // (24 * 60 * 60)
-                print(
-                    f"Strategy is now going into cooldown mode for {cooldown_days} days."
+        strategy_output: BaseStrategyOutput = (
+            None  # Need to fetch the last strategy output from the log file
+        )
+        holding_quantity = (
+            0  # Need to fetch the last holding quantity from the log file
+        )
+        try:
+            while True:
+                # Fetch LTP
+                ltp = await self.fetch_ltp_async(
+                    access_token=access_token,
+                    exchange=self.strategy_input.exchange,
+                    trading_symbol=self.strategy_input.trading_symbol,
+                    trading_segment=self.strategy_input.segment,
                 )
-                time.sleep(self.strategy_cooldown_time)
-                continue
 
-            # Re Run after the wait time
-            if self.execution_frequency_mode == ExecutionFrequencyMode.CONSTANT:
-                frequency = self.execution_frequency
-            elif self.execution_frequency_mode == ExecutionFrequencyMode.DYNAMIC:
-                frequency = self.get_dynamic_execution_frequency(
-                    ltp=ltp,
-                    min_frequency=self.min_max_execution_frequency[0],
-                    max_frequency=self.min_max_execution_frequency[1],
+                # Set LTP in strategy input
+                self.strategy_input.ltp = ltp
+
+                # Re initialize the strategy with the updated LTP and parameters
+                self.strategy.strategy_params = self.get_strategy_params(ltp=ltp)
+                self.strategy.strategy_input = self.strategy_input
+                self.strategy.holding_quantity = holding_quantity
+
+                if strategy_output is None:
+                    strategy_output = self.strategy.execute()
+                else:
+                    if strategy_output.trade_action == TradeAction.NO_ACTION:
+                        strategy_output = self.strategy.execute()
+                    elif (
+                        strategy_output.trade_action == TradeAction.HOLD
+                        or strategy_output.trade_action == TradeAction.BUY
+                    ):
+                        self.strategy.trade_status = TradeStatus.HOLDING
+                        strategy_output = self.strategy.execute()
+                    elif strategy_output.trade_action == TradeAction.SELL:
+                        self.strategy.trade_status = TradeStatus.NOT_TRIGGERED
+                        strategy_output = self.strategy.execute()
+                    else:
+                        raise ValueError(
+                            f"Invalid trade action: {strategy_output.trade_action}"
+                        )
+
+                # Validate the execution
+                execution_validator = ExecutionValidator(
+                    strategy_output=strategy_output,
                 )
-            else:
-                raise ValueError(
-                    f"Invalid execution frequency mode: {self.execution_frequency_mode}"
-                )
-            wait_time = self.rerun_wait_time(frequency=frequency)
-            time.sleep(wait_time)
+                if not execution_validator.validate():
+                    print("Execution validation failed.")
+                    await asyncio.sleep(self.error_cooldown_time)
+                    continue
+
+                # Change Holding quantity if needed
+                if strategy_output.trade_action == TradeAction.BUY:
+                    holding_quantity += strategy_output.quantity
+                elif strategy_output.trade_action == TradeAction.SELL:
+                    holding_quantity -= strategy_output.quantity
+
+                # Log the strategy output, implement the logging logic
+                self.log_strategy_output(strategy_output, ltp)
+
+                # Check if the strategy needs to go into cooldown mode
+                if self.cooldown_strategy():
+                    cooldown_days = self.strategy_cooldown_time // (24 * 60 * 60)
+                    print(
+                        f"Strategy is now going into cooldown mode for {cooldown_days} days."
+                    )
+                    await asyncio.sleep(self.strategy_cooldown_time)
+                    continue
+
+                # Re Run after the wait time
+                if self.execution_frequency_mode == ExecutionFrequencyMode.CONSTANT:
+                    frequency = self.execution_frequency
+                elif self.execution_frequency_mode == ExecutionFrequencyMode.DYNAMIC:
+                    frequency = self.get_dynamic_execution_frequency(
+                        ltp=ltp,
+                        min_frequency=self.min_max_execution_frequency[0],
+                        max_frequency=self.min_max_execution_frequency[1],
+                    )
+                else:
+                    raise ValueError(
+                        f"Invalid execution frequency mode: {self.execution_frequency_mode}"
+                    )
+                wait_time = self.rerun_wait_time(frequency=frequency)
+                await asyncio.sleep(wait_time)
+        except Exception as e:
+            print(f"Unexpected error in run_live_async: {e}")
+            await asyncio.sleep(self.error_cooldown_time)
 
     def run_backtest(self, max_iterations: int = 10_000_000):
         """
@@ -250,69 +368,161 @@ class StrategyManager:
         ltp = 1
         iteration = 1
         holding_quantity = 0
-        while (
-            ltp is not None and iteration < max_iterations
-        ):  # Make LTP None in the end of backtest, implement the logic in get_ltp function
-            iteration += 1
+        try:
+            while (
+                ltp is not None and iteration < max_iterations
+            ):  # Make LTP None in the end of backtest, implement the logic in get_ltp function
+                iteration += 1
 
-            # Fetch LTP
-            ltp = self.fetch_ltp(
-                access_token=None,
-                exchange=self.strategy_input.exchange,
-                trading_symbol=self.strategy_input.trading_symbol,
-                trading_segment=self.strategy_input.segment,
-            )
+                # Fetch LTP
+                ltp = self.fetch_ltp(
+                    access_token=None,
+                    exchange=self.strategy_input.exchange,
+                    trading_symbol=self.strategy_input.trading_symbol,
+                    trading_segment=self.strategy_input.segment,
+                )
 
-            # Set LTP in strategy input
-            self.strategy_input.ltp = ltp
+                # Set LTP in strategy input
+                self.strategy_input.ltp = ltp
 
-            # Re initialize the strategy with the updated LTP and parameters
-            self.strategy.strategy_params = self.get_strategy_params(ltp=ltp)
-            self.strategy.strategy_input = self.strategy_input
+                # Re initialize the strategy with the updated LTP and parameters
+                self.strategy.strategy_params = self.get_strategy_params(ltp=ltp)
+                self.strategy.strategy_input = self.strategy_input
 
-            self.strategy.holding_quantity = holding_quantity
+                self.strategy.holding_quantity = holding_quantity
 
-            if strategy_output is None:
-                strategy_output = self.strategy.execute()
-            else:
-                if strategy_output.trade_action == TradeAction.NO_ACTION:
-                    strategy_output = self.strategy.execute()
-                elif (
-                    strategy_output.trade_action == TradeAction.HOLD
-                    or strategy_output.trade_action == TradeAction.BUY
-                ):
-                    self.strategy.trade_status = TradeStatus.HOLDING
-                    strategy_output = self.strategy.execute()
-                elif strategy_output.trade_action == TradeAction.SELL:
-                    self.strategy.trade_status = TradeStatus.NOT_TRIGGERED
+                if strategy_output is None:
                     strategy_output = self.strategy.execute()
                 else:
-                    raise ValueError(
-                        f"Invalid trade action: {strategy_output.trade_action}"
-                    )
+                    if strategy_output.trade_action == TradeAction.NO_ACTION:
+                        strategy_output = self.strategy.execute()
+                    elif (
+                        strategy_output.trade_action == TradeAction.HOLD
+                        or strategy_output.trade_action == TradeAction.BUY
+                    ):
+                        self.strategy.trade_status = TradeStatus.HOLDING
+                        strategy_output = self.strategy.execute()
+                    elif strategy_output.trade_action == TradeAction.SELL:
+                        self.strategy.trade_status = TradeStatus.NOT_TRIGGERED
+                        strategy_output = self.strategy.execute()
+                    else:
+                        raise ValueError(
+                            f"Invalid trade action: {strategy_output.trade_action}"
+                        )
 
-            # Validate the execution
-            execution_validator = ExecutionValidator(
-                strategy_output=strategy_output,
-            )
-            if not execution_validator.validate():
-                print("Execution validation failed.")
-                time.sleep(self.error_cooldown_time)
-                continue
+                # Validate the execution
+                execution_validator = ExecutionValidator(
+                    strategy_output=strategy_output,
+                )
+                if not execution_validator.validate():
+                    print("Execution validation failed.")
+                    time.sleep(self.error_cooldown_time)
+                    continue
 
-            if strategy_output.trade_action == TradeAction.BUY:
-                holding_quantity += strategy_output.quantity
-            elif strategy_output.trade_action == TradeAction.SELL:
-                holding_quantity -= strategy_output.quantity
+                if strategy_output.trade_action == TradeAction.BUY:
+                    holding_quantity += strategy_output.quantity
+                elif strategy_output.trade_action == TradeAction.SELL:
+                    holding_quantity -= strategy_output.quantity
 
-            # Log the strategy output, implement the logging logic
-            self.log_strategy_output(strategy_output, ltp, holding_quantity)
+                # Log the strategy output, implement the logging logic
+                # logger = SyncStrategyLogger()
+                # logger.log_strategy_output(strategy_output, ltp, holding_quantity)
+                self.log_strategy_output(strategy_output, ltp, holding_quantity)
 
-            # NEED TO IMPLEMENT A BETTER COOLDOWN STATE CHECK LOGIC HERE AS THIS IS A BACKTEST
+                # NEED TO IMPLEMENT A BETTER COOLDOWN STATE CHECK LOGIC HERE AS THIS IS A BACKTEST
 
-            # No need to wait for the next iteration in backtest mode
+                # No need to wait for the next iteration in backtest mode
+        except Exception as e:
+            print(f"Unexpected error in run_backtest: {e}")
+            time.sleep(self.error_cooldown_time)
 
-        return
+        # logger.stop_logger()
+
+    async def run_backtest_async(self, max_iterations: int = 10_000_000):
+        """
+        Run the trading strategy in backtest mode asynchronously.
+        This method is responsible for executing the trading strategy asynchronously,
+        validating the execution, and handling any errors that may occur.
+        """
+        # NEED TO IMPLEMENT A BETTER COOLDOWN STATE CHECK LOGIC HERE AS THIS IS A BACKTEST
+
+        # Placeholder for backtest logic
+        print("Running Backtest")
+        strategy_output: BaseStrategyOutput = (
+            None  # Need to fetch the last strategy output from the log file
+        )
+        ltp = 1
+        iteration = 1
+        holding_quantity = 0
+        try:
+            while (
+                ltp is not None and iteration < max_iterations
+            ):  # Make LTP None in the end of backtest, implement the logic in get_ltp function
+                iteration += 1
+
+                # Fetch LTP
+                ltp = await self.fetch_ltp_async(
+                    access_token=None,
+                    exchange=self.strategy_input.exchange,
+                    trading_symbol=self.strategy_input.trading_symbol,
+                    trading_segment=self.strategy_input.segment,
+                )
+
+                # Set LTP in strategy input
+                self.strategy_input.ltp = ltp
+
+                # Re initialize the strategy with the updated LTP and parameters
+                self.strategy.strategy_params = self.get_strategy_params(ltp=ltp)
+                self.strategy.strategy_input = self.strategy_input
+
+                self.strategy.holding_quantity = holding_quantity
+
+                if strategy_output is None:
+                    strategy_output = self.strategy.execute()
+                else:
+                    if strategy_output.trade_action == TradeAction.NO_ACTION:
+                        strategy_output = self.strategy.execute()
+                    elif (
+                        strategy_output.trade_action == TradeAction.HOLD
+                        or strategy_output.trade_action == TradeAction.BUY
+                    ):
+                        self.strategy.trade_status = TradeStatus.HOLDING
+                        strategy_output = self.strategy.execute()
+                    elif strategy_output.trade_action == TradeAction.SELL:
+                        self.strategy.trade_status = TradeStatus.NOT_TRIGGERED
+                        strategy_output = self.strategy.execute()
+                    else:
+                        raise ValueError(
+                            f"Invalid trade action: {strategy_output.trade_action}"
+                        )
+
+                # Validate the execution
+                execution_validator = ExecutionValidator(
+                    strategy_output=strategy_output,
+                )
+                if not execution_validator.validate():
+                    print("Execution validation failed.")
+                    await asyncio.sleep(self.error_cooldown_time)
+                    continue
+
+                if strategy_output.trade_action == TradeAction.BUY:
+                    holding_quantity += strategy_output.quantity
+                elif strategy_output.trade_action == TradeAction.SELL:
+                    holding_quantity -= strategy_output.quantity
+
+                # Log the strategy output, implement the logging logic
+                # logger = AsyncStrategyLogger()
+                # logger.log_strategy_output_async(strategy_output, ltp, holding_quantity)
+                self.log_strategy_output(strategy_output, ltp, holding_quantity)
+
+                # NEED TO IMPLEMENT A BETTER COOLDOWN STATE CHECK LOGIC HERE AS THIS IS A BACKTEST
+
+                # No need to wait for the next iteration in backtest mode
+        except Exception as e:
+            print(f"Unexpected error in run_backtest_async: {e}")
+            await asyncio.sleep(self.error_cooldown_time)
+
+        # logger.stop_logger_async()
 
     def run_simulation(self, max_iterations: int = 10_000_000):
         """
@@ -321,6 +531,14 @@ class StrategyManager:
         validating the execution, and handling any errors that may occur.
         """
         return self.run_backtest(max_iterations=max_iterations)
+
+    async def run_simulation_async(self, max_iterations: int = 10_000_000):
+        """
+        Run the trading strategy in simulation mode asynchronously.
+        This method is responsible for executing the trading strategy asynchronously,
+        validating the execution, and handling any errors that may occur.
+        """
+        return await self.run_backtest_async(max_iterations=max_iterations)
 
     def get_strategy_params(self, ltp: float) -> BaseStrategyParams:
         """
@@ -347,6 +565,26 @@ class StrategyManager:
                     f"Error logging into broker. Retrying after cooldown of {self.error_cooldown_time // 60} minutes."
                 )
                 time.sleep(self.error_cooldown_time)
+        return access_token
+
+    async def fetch_access_token_async(self):
+        """
+        Asynchronously fetch the access token for the broker using the login method.
+        This method retries on failure, waiting asynchronously before retrying.
+        """
+        login_status = False
+        access_token = None
+
+        while not login_status:
+            try:
+                access_token = await self.broker_login()  # Await the async login method
+                login_status = True
+            except Exception as e:
+                print(
+                    f"Error logging into broker: {e}. Retrying after cooldown of {self.error_cooldown_time // 60} minutes."
+                )
+                await asyncio.sleep(self.error_cooldown_time)  # Non-blocking sleep
+
         return access_token
 
     def broker_login(self):
@@ -397,6 +635,38 @@ class StrategyManager:
                     f"Retrying after cooldown of {self.error_cooldown_time // 60} minutes."
                 )
                 time.sleep(self.error_cooldown_time)
+
+        return ltp
+
+    async def fetch_ltp_async(
+        self,
+        access_token: str,
+        exchange: BaseExchange,
+        trading_symbol: TradingSymbol,
+        trading_segment: BaseSegment,
+    ):
+        """
+        Asynchronously fetch the last traded price (LTP) of the stock.
+        This method retries on failure, waiting asynchronously before retrying.
+        """
+        ltp_present = False
+        ltp = None
+
+        while not ltp_present:
+            try:
+                ltp = self.get_ltp(
+                    access_token=access_token,
+                    exchange=exchange,
+                    trading_symbol=trading_symbol,
+                    trading_segment=trading_segment,
+                )
+                ltp_present = True
+            except Exception as e:
+                print(f"Error fetching LTP: {e}")
+                print(
+                    f"Retrying after cooldown of {self.error_cooldown_time // 60} minutes."
+                )
+                await asyncio.sleep(self.error_cooldown_time)  # Non-blocking sleep
 
         return ltp
 
@@ -668,5 +938,10 @@ if __name__ == "__main__":
     )
     start_time = time.time()
     strategy_manager.run()
+    end_time = time.time()
+    print(f"Strategy Manager took {end_time - start_time} seconds")
+
+    start_time = time.time()
+    asyncio.run(strategy_manager.run_async())
     end_time = time.time()
     print(f"Strategy Manager took {end_time - start_time} seconds")
