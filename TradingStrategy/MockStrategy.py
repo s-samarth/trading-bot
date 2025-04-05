@@ -7,9 +7,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from pydantic import Field
 
-from TradingStrategy.StrategyData import BaseStrategyInput, BaseStrategyParams
-from TradingStrategy.Constants import TradingSymbol, TradeStatus
 from TradingStrategy.Template import StrategyTemplate
+from TradingStrategy.Constants import TradingSymbol, TradeStatus
+from TradingStrategy.StrategyData import (
+    BaseStrategyInput,
+    BaseStrategyParams,
+    BaseStrategyManagerState,
+)
 
 
 class MockStrategyParams(BaseStrategyParams):
@@ -18,11 +22,17 @@ class MockStrategyParams(BaseStrategyParams):
     """
 
     all_time_high: float = Field(
-        default=1000.5, description="The all-time high price of the stock."
+        default=1000, description="The all-time high price of the stock."
     )
     allowed_strategy_capital: float = Field(
         default=1_00_000 * 0.05,
         description="The capital allowed for trading using this strategy.",
+    )
+    target_percent: float = Field(
+        default=4, description="Target percentage for profit."
+    )
+    stop_loss_percent: float = Field(
+        default=2, description="Stop loss percentage for loss protection."
     )
 
 
@@ -63,6 +73,18 @@ class MockStrategy(StrategyTemplate):
         """
         return int(self.strategy_params.allowed_strategy_capital / (buy_price))
 
+    def get_target_price(self, buy_price):
+        """
+        Returns the target price for the strategy.
+        """
+        return buy_price * (1 + self.strategy_params.target_percent / 100)
+
+    def get_stop_loss_price(self, buy_price):
+        """
+        Returns the stop loss price for the strategy.
+        """
+        return buy_price * (1 - self.strategy_params.stop_loss_percent / 100)
+
 
 if __name__ == "__main__":
     # Example usage of the MockStrategy class
@@ -72,7 +94,7 @@ if __name__ == "__main__":
     strategy_params = MockStrategyParams(
         target_percent=4,
         stop_loss_percent=2,
-        all_time_high=1000.5,
+        all_time_high=1000,
         allowed_strategy_capital=5000,
     )
     strategy = MockStrategy(
@@ -85,85 +107,68 @@ if __name__ == "__main__":
 
     print(f"Buy Price: {strategy.get_buy_price()}")
     print(f"Buy Quantity: {strategy.get_buy_quantity(strategy.get_buy_price())}")
+    print(f"Target Price: {strategy.get_target_price(strategy.get_buy_price())}")
+    print(f"Stop Loss Price: {strategy.get_stop_loss_price(strategy.get_buy_price())}")
 
-    # Do Nothing Example
-    strategy_input = BaseStrategyInput(
-        trading_symbol=TradingSymbol("HDFCBANK"), ltp=1000
-    )
+    strategy_input = BaseStrategyInput(trading_symbol=TradingSymbol("HDFCBANK"))
 
     strategy = MockStrategy(
         strategy_input=strategy_input,
         strategy_params=strategy_params,
     )
+    # Do Nothing Example
+    strategy_manager_state = BaseStrategyManagerState(
+        strategy_name=strategy.strategy_name, ltp=100
+    )
+    strategy.strategy_manager_state = strategy_manager_state
     strategy_output = strategy.execute()
     print("Do Nothing Example\n")
     pprint(f"Strategy Output: {strategy_output.model_dump()}\n")
     print("================================================\n")
 
     # Buy Example
-    strategy_input = BaseStrategyInput(
-        trading_symbol=TradingSymbol("HDFCBANK"), ltp=801
-    )
-    strategy = MockStrategy(
-        strategy_input=strategy_input,
-        strategy_params=strategy_params,
-    )
+    strategy_manager_state.ltp = 801
+    strategy.strategy_manager_state = strategy_manager_state
     strategy_output = strategy.execute()
     print("Buy Example\n")
     pprint(f"Strategy Output: {strategy_output.model_dump()}\n")
     print("================================================\n")
 
     # Hold Example 1
-    strategy_input = BaseStrategyInput(
-        trading_symbol=TradingSymbol("HDFCBANK"), ltp=805
-    )
-    strategy = MockStrategy(
-        strategy_input=strategy_input,
-        strategy_params=strategy_params,
-    )
-    strategy.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.ltp = 805
+    strategy_manager_state.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.holding_quantity = 6
+    strategy.strategy_manager_state = strategy_manager_state
     strategy_output = strategy.execute()
     print("Hold Example 1\n")
     pprint(f"Strategy Output: {strategy_output.model_dump()}\n")
     print("================================================\n")
 
     # Hold Example 2
-    strategy_input = BaseStrategyInput(
-        trading_symbol=TradingSymbol("HDFCBANK"), ltp=786
-    )
-    strategy = MockStrategy(
-        strategy_input=strategy_input,
-        strategy_params=strategy_params,
-    )
-    strategy.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.ltp = 786
+    strategy_manager_state.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.holding_quantity = 6
+    strategy.strategy_manager_state = strategy_manager_state
     strategy_output = strategy.execute()
     print("Hold Example 2\n")
     pprint(f"Strategy Output: {strategy_output.model_dump()}\n")
     print("================================================\n")
 
     # Sell Example 1
-    strategy_input = BaseStrategyInput(
-        trading_symbol=TradingSymbol("HDFCBANK"), ltp=832
-    )
-    strategy = MockStrategy(
-        strategy_input=strategy_input,
-        strategy_params=strategy_params,
-    )
-    strategy.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.ltp = 832
+    strategy_manager_state.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.holding_quantity = 6
+    strategy.strategy_manager_state = strategy_manager_state
     strategy_output = strategy.execute()
     print("Sell Example 1\n")
     pprint(f"Strategy Output: {strategy_output.model_dump()}\n")
     print("================================================\n")
 
     # Sell Example 2
-    strategy_input = BaseStrategyInput(
-        trading_symbol=TradingSymbol("HDFCBANK"), ltp=785
-    )
-    strategy = MockStrategy(
-        strategy_input=strategy_input,
-        strategy_params=strategy_params,
-    )
-    strategy.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.ltp = 784.5
+    strategy_manager_state.trade_status = TradeStatus.HOLDING
+    strategy_manager_state.holding_quantity = 6
+    strategy.strategy_manager_state = strategy_manager_state
     strategy_output = strategy.execute()
     print("Sell Example 2\n")
     pprint(f"Strategy Output: {strategy_output.model_dump()}\n")

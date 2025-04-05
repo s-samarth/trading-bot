@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 from abc import ABC, abstractmethod
 
 
@@ -7,9 +8,11 @@ from API.Upstox.TradeExecutor import PlaceOrderData as UpstoxPlaceOrderData
 from API.Upstox.Data import UserData, BrokerageData
 from TradingStrategy.ApiConstantsMapping import UpstoxConstantsMapping
 from TradingStrategy.StrategyData import (
+    BrokerSecrets,
     BaseStrategyInput,
     BaseStrategyParams,
     BaseStrategyOutput,
+    BaseStrategyManagerState,
 )
 from TradingStrategy.Constants import (
     TradeResult,
@@ -35,27 +38,26 @@ class StrategyTemplate(ABC):
         The input parameters for the trading strategy.
     - strategy_params: BaseStrategyParams
         The parameters for the trading strategy.
-    - mode: TradingMode
-        The mode of trading (BACKTEST/LIVE/SANDBOX).
+    - broker_secrets: BrokerSecrets
+        The secrets for the broker's API.
     """
 
     def __init__(
         self,
         strategy_input: BaseStrategyInput,
-        strategy_params: BaseStrategyParams,
-        mode: TradingMode = TradingMode.BACKTEST,
+        strategy_params: Optional[BaseStrategyParams] = None,
+        broker_secrets: Optional[BrokerSecrets] = None,
     ):
 
         self.strategy_name = self.__class__.__name__
         self.strategy_input = strategy_input
-        self.strategy_params = strategy_params
-        self.mode = mode
-        self.broker = strategy_input.broker
-        self.trade_status = (
-            TradeStatus.NOT_TRIGGERED
-        )  # To be changed only by the Strategy Manager
-        self.quantity = None  # To be changed only by the Strategy Validator in case of only partial buy
-        self.holding_quantity = 0  # To be changed only by the strategy manager
+        self.strategy_params = (
+            strategy_params if strategy_params else BaseStrategyParams()
+        )
+        self.broker_secrets = broker_secrets
+        self.strategy_manager_state: BaseStrategyManagerState = (
+            None  # To be changed only by the strategy manager
+        )
 
     @abstractmethod
     def get_buy_price(self) -> float:
@@ -73,11 +75,29 @@ class StrategyTemplate(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_target_price(self, buy_price: float) -> float:
+        """
+        Calculate the target price based on the buy price.
+        This is an abstract method and should be implemented by the subclass.
+        """
+        pass
+
+    @abstractmethod
+    def get_stop_loss_price(self, buy_price: float) -> float:
+        """
+        Calculate the stop loss price based on the buy price.
+        This is an abstract method and should be implemented by the subclass.
+        """
+        pass
+
     def execute(self) -> BaseStrategyOutput:
         """
         Execute the trading strategy.
         This method should be called to execute the strategy.
         """
+        self.set_states()
+
         strategy_output = BaseStrategyOutput(
             trading_symbol=self.strategy_input.trading_symbol,
             exchange=self.strategy_input.exchange,
@@ -102,8 +122,8 @@ class StrategyTemplate(ABC):
         Execute the buy order.
         This method should be called to execute the buy order.
         """
-        ltp = self.strategy_input.ltp
-        buy_signal = self.buy_signal(ltp)
+
+        buy_signal = self.buy_signal(self.ltp)
 
         if buy_signal:
             # Buy signal generated
@@ -141,23 +161,20 @@ class StrategyTemplate(ABC):
         This method should be called to execute the sell order.
         """
         strategy_output.trade_action = TradeAction.HOLD
-        ltp = self.strategy_input.ltp
         # Check for sell signals
         buy_price = self.get_buy_price()
-        quantity = self.quantity if self.quantity else self.get_buy_quantity(buy_price)
+        quantity = self.holding_quantity
         strategy_output.quantity = (
             quantity  # Set the quantity in the output even while holding
         )
-        if quantity > self.holding_quantity:
-            return strategy_output
 
-        sell_signal = self.sell_signal(ltp, buy_price)
+        sell_signal = self.sell_signal(self.ltp, buy_price)
         if sell_signal:
             # Sell signal generated
             if sell_signal == TradeResult.PROFIT:
-                sell_price = self.get_target_price(buy_price)
+                sell_price = self.target_price_at_buy_time
             else:
-                sell_price = self.get_stop_loss_price(buy_price)
+                sell_price = self.stop_loss_price_at_buy_time
 
             # Place the order
             order_id = self.place_limit_order(
@@ -180,6 +197,26 @@ class StrategyTemplate(ABC):
 
         return strategy_output
 
+    def set_states(self):
+        """
+        Set the states given by the strategy manager.
+        This method should be called to set the states.
+        """
+        if self.strategy_manager_state is None:
+            raise ValueError("Strategy manager state is not set.")
+
+        self.ltp = self.strategy_manager_state.ltp
+        self.trade_status = self.strategy_manager_state.trade_status
+        self.holding_quantity = self.strategy_manager_state.holding_quantity
+        self.mode = self.strategy_manager_state.trading_mode
+        self.broker = self.strategy_manager_state.broker
+        self.stop_loss_price_at_buy_time = (
+            self.strategy_manager_state.stop_loss_price_at_buy_time
+        )
+        self.target_price_at_buy_time = (
+            self.strategy_manager_state.target_price_at_buy_time
+        )
+
     def place_limit_order(
         self, transaction_type: BaseTransactionType, price: float, quantity: int
     ) -> str:
@@ -198,7 +235,7 @@ class StrategyTemplate(ABC):
                 raise ValueError("Broker is not set for live trading.")
 
             if self.broker == Broker.UPSTOX:
-                access_token = self.strategy_input.access_token
+                access_token = self.broker_secrets.access_token
                 place_order_data = UpstoxPlaceOrderData(
                     trading_symbol=self.strategy_input.trading_symbol,
                     exchange=UpstoxConstantsMapping.exchange(
@@ -232,26 +269,19 @@ class StrategyTemplate(ABC):
                 "Order placement is not implemented for this mode."
             )
 
-    def get_target_price(self, buy_price: float) -> float:
-        """
-        Calculate the target price based on the buy price.
-        """
-        target_price = buy_price * (1 + self.strategy_params.target_percent / 100)
-        return target_price
-
-    def get_stop_loss_price(self, buy_price: float) -> float:
-        """
-        Calculate the stop loss price based on the buy price.
-        """
-        stop_loss_price = buy_price * (1 - self.strategy_params.stop_loss_percent / 100)
-        return stop_loss_price
-
     def buy_signal(self, ltp: float) -> bool:
         """
         Generate a buy signal based on the last traded price (LTP).
         """
         buy_price = self.get_buy_price()
         tolerance = (self.strategy_params.tolerance_percent / 100) * buy_price
+
+        # Do not create buy signal if the price is below the stop loss price, this is to avoid
+        # buying at a price below the stop loss price and avoid inaccurate trades
+        stop_loss_price = self.get_stop_loss_price(buy_price)
+        if ltp < stop_loss_price:
+            return False
+
         if ltp < buy_price + tolerance:
             return True
         return False
@@ -261,14 +291,15 @@ class StrategyTemplate(ABC):
         Generate a sell signal for Trigger Price or Stop Loss Price
         based on the last traded price (LTP) and buy price.
         """
-        sell_price_target = float(self.get_target_price(buy_price))
+        sell_price_target = self.target_price_at_buy_time
         target_tolerance = (
             self.strategy_params.tolerance_percent / 100
         ) * sell_price_target
         if ltp > sell_price_target - target_tolerance:
             return TradeResult.PROFIT
 
-        sell_price_stop_loss = self.get_stop_loss_price(buy_price)
+        # Check for stop loss
+        sell_price_stop_loss = self.stop_loss_price_at_buy_time
         stop_loss_tolerance = (
             self.strategy_params.tolerance_percent / 100
         ) * sell_price_stop_loss
@@ -296,8 +327,9 @@ class StrategyTemplate(ABC):
                 raise ValueError("Broker is not set for live trading.")
 
             if self.broker == Broker.UPSTOX:
+                access_token = self.broker_secrets.access_token
                 brokerage_data = BrokerageData(
-                    self.strategy_input.access_token
+                    access_token=access_token,
                 ).get_brokerage(
                     trading_symbol=self.strategy_input.trading_symbol,
                     exchange=UpstoxConstantsMapping.exchange(
@@ -336,8 +368,9 @@ class StrategyTemplate(ABC):
         elif self.mode == TradingMode.LIVE:
 
             if self.broker == Broker.UPSTOX:
+                access_token = self.broker_secrets.access_token
                 margin_data = UserData(
-                    self.strategy_input.access_token
+                    access_token=access_token,
                 ).get_fund_and_margin()
                 if margin_data["status"] != "success":
                     return False
