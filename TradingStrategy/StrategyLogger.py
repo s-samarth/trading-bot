@@ -1,171 +1,181 @@
+import os
+import json
 import asyncio
 import threading
-import json
-import os
+from typing import Optional
 from datetime import datetime
 
 import aiofiles
 
 from config.Config import Config
-from TradingStrategy.StrategyData import BaseStrategyOutput
+from TradingStrategy.StrategyData import (
+    BaseStrategyInput,
+    BaseStrategyOutput,
+    BaseStrategyParams,
+    BaseStrategyManagerState,
+)
+from TradingStrategy.Constants import (
+    TradingSymbol,
+    TradingMode,
+)
 
 
-# Module is filled with bugs and errors, and is not working as intended.
-# Needs to be fixed and refactored.
-class AsyncStrategyLogger:
-    def __init__(self, root_dir=Config.root_dir, batch_size=10, flush_interval=5):
-        self.log_file = os.path.join(root_dir, "TradingResults/Backtest/Results.json")
-        self.batch_size = batch_size  # ✅ Controls when to flush logs
-        self.flush_interval = flush_interval  # ✅ Auto flush interval (seconds)
-        self.log_buffer = []
-        self.lock = asyncio.Lock()  # ✅ Prevent race conditions in async
+class StrategyLogger:
+    def __init__(
+        self,
+        strategy_name: str,
+        trading_symbol: TradingSymbol,
+        trading_mode: TradingMode,
+        reset_logger: bool = False,
+        log_file_path: Optional[str] = None,
+        verbose: bool = False,
+    ):
+        self.logs = []
+        self.strategy_name = strategy_name
+        self.trading_symbol = trading_symbol
+        self.trading_mode = trading_mode
+        self.reset_logger = reset_logger
+        self.verbose = verbose
+        if log_file_path is None:
+            filename = (
+                "TradingResults/"
+                + trading_mode
+                + "/"
+                + strategy_name
+                + "/Results_"
+                + trading_symbol
+                + ".json"
+            )
+            self.log_file_path = os.path.join(Config.root_dir, filename)
+        else:
+            self.log_file_path = log_file_path
 
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(self.log_file), exist_ok=True)
+        self.output_id = 0
 
-        # 🚀 New: Add stop signal + task handle
-        self.stop_event = asyncio.Event()
-        # Start auto-flush task
-        self.auto_flush_task = asyncio.create_task(self._auto_flush_async())
+        # Create the directory if it doesn't exist
+        os.makedirs(os.path.dirname(self.log_file_path), exist_ok=True)
 
-    async def log_strategy_output_async(
-        self, strategy_output: BaseStrategyOutput, ltp, holding_quantity
+        # Create the log file if it doesn't exist or reset_logger is True
+        if not os.path.exists(self.log_file_path) or reset_logger:
+            with open(self.log_file_path, "w") as f:
+                json.dump([], f, indent=4)
+        else:
+            # If the file exists and reset_logger is False, read the existing logs
+            with open(self.log_file_path, "r") as f:
+                self.logs = json.load(f)
+                self.output_id = self.logs[-1]["output_id"] + 1
+
+    def log_strategy_output(
+        self,
+        strategy_name: str,
+        strategy_input: BaseStrategyInput,
+        strategy_output: BaseStrategyOutput,
+        strategy_params: BaseStrategyParams,
+        strategy_manager_state: BaseStrategyManagerState,
+        batch_size: int = 10,
     ):
         """
-        Logs the strategy output asynchronously using batching.
+        Logs the strategy output to a JSON file.
         """
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        output_dict = {
-            "timestamp": timestamp,
-            "trading_symbol": strategy_output.trading_symbol,
-            "exchange": strategy_output.exchange,
-            "trade_action": strategy_output.trade_action,
-            "holding_quantity": holding_quantity,
-            "trade_charges": strategy_output.trade_charges,
-            "ltp": ltp,
-            "quantity": strategy_output.quantity,
-            "execution_status": strategy_output.execution_status,
-            "order_id": strategy_output.order_id,
-            "information": strategy_output.information,
-        }
-
-        async with self.lock:
-            self.log_buffer.append(output_dict)
-
-            # ✅ Flush when batch is full
-            if len(self.log_buffer) >= self.batch_size:
-                await self._flush_logs_async()
-
-    async def _flush_logs_async(self):
-        """
-        Flushes the log buffer to the file asynchronously.
-        """
-        if not self.log_buffer:
-            return
-
-        async with self.lock:
-            try:
-                # Load existing logs
-                if os.path.exists(self.log_file):
-                    async with aiofiles.open(self.log_file, "r") as f:
-                        content = await f.read()
-                        logs = json.loads(content) if content else []
+        try:
+            self.output_id += 1
+            if self.verbose:
+                log_entry = self._get_log_entry(
+                    strategy_name,
+                    strategy_input,
+                    strategy_output,
+                    strategy_params,
+                    strategy_manager_state,
+                )
+            else:
+                if (
+                    strategy_output.trade_action == "BUY"
+                    or strategy_output.trade_action == "SELL"
+                ):
+                    log_entry = self._get_log_entry(
+                        strategy_name,
+                        strategy_input,
+                        strategy_output,
+                        strategy_params,
+                        strategy_manager_state,
+                    )
                 else:
-                    logs = []
+                    log_entry = None
+            if log_entry:
+                self.logs.append(log_entry)
 
-                # Append new logs
-                logs.extend(self.log_buffer)
-                self.log_buffer.clear()  # ✅ Clear buffer after writing
+                if len(self.logs) >= batch_size:
+                    # Write the logs to the file in batches
+                    with open(self.log_file_path, "r") as f:
+                        existing_logs = json.load(f)
 
-                # Write back to file
-                async with aiofiles.open(self.log_file, "w") as f:
-                    await f.write(json.dumps(logs, indent=4))
+                    existing_logs.extend(self.logs)
+                    with open(self.log_file_path, "w") as f:
+                        json.dump(existing_logs, f, indent=4)
 
-            except Exception as e:
-                print(f"Error logging strategy output: {e}")
-
-    async def _auto_flush_async(self):
-        try:
-            while not self.stop_event.is_set():
-                await asyncio.sleep(self.flush_interval)
-                await self._flush_logs_async()
-        except asyncio.CancelledError:
-            pass  # Handle graceful exit if needed
-
-    async def stop_logger_async(self):
-        """
-        Gracefully stop the logger: stop flushing, flush remaining logs, release resources.
-        """
-        self.stop_event.set()
-        await self.auto_flush_task  # Wait for flush task to end
-        await self._flush_logs_async()
-        print("Logger stopped and all resources released.")
-
-
-class SyncStrategyLogger:
-    def __init__(self, root_dir=Config.root_dir, batch_size=10, flush_interval=5):
-        self.logger = AsyncStrategyLogger(root_dir, batch_size, flush_interval)
-
-        # Create a new event loop for async operations
-        self.loop = asyncio.new_event_loop()
-        self.thread = threading.Thread(target=self._start_event_loop, daemon=True)
-        self.thread.start()
-
-        # Event to track if the loop is running
-        self.loop_running = True
-
-        # Start auto-flush task in the background
-        self.auto_flush_task = asyncio.run_coroutine_threadsafe(
-            self.logger._auto_flush_async(), self.loop
-        )
-
-    def _start_event_loop(self):
-        asyncio.set_event_loop(self.loop)
-        self.loop.run_forever()
-
-    def log_strategy_output(self, strategy_output, ltp, holding_quantity):
-        """
-        Runs the async log function inside the background event loop.
-        """
-        if not self.loop_running:
-            raise RuntimeError("Cannot log: Event loop is not running.")
-
-        future = asyncio.run_coroutine_threadsafe(
-            self.logger.log_strategy_output_async(
-                strategy_output, ltp, holding_quantity
-            ),
-            self.loop,
-        )
-        return future.result()
-
-    def stop_logger(self):
-        """
-        Stops the logger, flushes logs, cancels tasks, and shuts down the event loop.
-        """
-        if not self.loop_running:
-            return  # Already stopped
-
-        try:
-            # ✅ Cancel the auto-flush task
-            if self.auto_flush_task:
-                self.auto_flush_task.cancel()
-
-            # ✅ Flush any remaining logs before stopping
-            asyncio.run_coroutine_threadsafe(
-                self.logger._flush_logs_async(), self.loop
-            ).result()
-
-            # ✅ Call async stop method in AsyncStrategyLogger
-            asyncio.run_coroutine_threadsafe(
-                self.logger.stop_logger_async(), self.loop
-            ).result()
-
-            # ✅ Stop the event loop safely
-            self.loop.call_soon_threadsafe(self.loop.stop)
-            self.loop_running = False  # Mark loop as stopped
-            self.thread.join()  # Wait for thread to exit
+                    # Clear the logs after writing
+                    self.logs.clear()
 
         except Exception as e:
-            print(f"Error stopping logger: {e}")
+            print(f"Error logging the Strategy Results: {e}")
+            raise ValueError(f"Error logging the Strategy Results: {e}")
 
-        print("Logger stopped gracefully.")
+    def end_logging(self):
+        """
+        Flushes any remaining logs to the file.
+        """
+        try:
+            if self.logs:
+                with open(self.log_file_path, "r") as f:
+                    existing_logs = json.load(f)
+
+                existing_logs.extend(self.logs)
+                with open(self.log_file_path, "w") as f:
+                    json.dump(existing_logs, f, indent=4)
+
+                # Clear the logs after writing
+                self.logs.clear()
+
+        except Exception as e:
+            print(f"Error ending logging: {e}")
+            raise ValueError(f"Error ending logging: {e}")
+
+    def _get_log_entry(
+        self,
+        strategy_name: str,
+        strategy_input: BaseStrategyInput,
+        strategy_output: BaseStrategyOutput,
+        strategy_params: BaseStrategyParams,
+        strategy_manager_state: BaseStrategyManagerState,
+    ):
+        """
+        Gets a log entry for the strategy
+        """
+        timpestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        log_entry = {
+            "timestamp": timpestamp,
+            "output_id": self.output_id,
+            "strategy_name": strategy_name,
+            "trading_symbol": strategy_input.trading_symbol,
+            "exchange": strategy_input.exchange,
+            "product_type": strategy_input.product_type,
+            "segment": strategy_input.segment,
+            "order_type": strategy_input.order_type,
+            "ltp": strategy_manager_state.ltp,
+            "trade_action": strategy_output.trade_action,
+            "quantity": strategy_manager_state.holding_quantity,
+            "trade_charges": strategy_output.trade_charges,
+            "execution_status": strategy_output.execution_status,
+            "order_id": strategy_output.order_id,
+            "trading_mode": strategy_manager_state.trading_mode,
+            "buy_price_executed": strategy_manager_state.buy_price_executed,
+            "target_price_at_buy_time": strategy_manager_state.target_price_at_buy_time,
+            "stop_loss_price_at_buy_time": strategy_manager_state.stop_loss_price_at_buy_time,
+            "sell_price_executed": strategy_manager_state.sell_price_executed,
+            "strategy_params": strategy_params.model_dump(),
+            "broker": strategy_manager_state.broker,
+            "cooldown_status": strategy_manager_state.cooldown_status,
+            "cooldown_timestamp": strategy_manager_state.cooldown_timestamp,
+            "information": strategy_output.information,
+        }
+        return log_entry

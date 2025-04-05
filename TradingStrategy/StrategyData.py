@@ -116,10 +116,6 @@ class BaseStrategyManagerState(BaseModel):
         ..., description="The name of the strategy being managed."
     )
     ltp: float = Field(default=None, description="The last traded price of the stock.")
-    timestamp: str = Field(
-        None,
-        description="Timestamp of the last update to the strategy manager.",
-    )
     trade_status: TradeStatus = Field(
         default=TradeStatus.NOT_TRIGGERED,
         description="Status of the trade (NOT_TRIGGERED/HOLDING/EXIT/etc).",
@@ -137,10 +133,10 @@ class BaseStrategyManagerState(BaseModel):
     sell_price_executed: Optional[float] = Field(
         None, description="Price at which the stock was sold."
     )
-    stop_loss_at_buy_price: Optional[float] = Field(
+    stop_loss_price_at_buy_time: Optional[float] = Field(
         None, description="Stop loss price set at the time of buying."
     )
-    target_price_at_buy_price: Optional[float] = Field(
+    target_price_at_buy_time: Optional[float] = Field(
         None, description="Target price set at the time of buying."
     )
     broker: Optional[Broker] = Field(

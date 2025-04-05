@@ -172,9 +172,9 @@ class StrategyTemplate(ABC):
         if sell_signal:
             # Sell signal generated
             if sell_signal == TradeResult.PROFIT:
-                sell_price = self.get_target_price(buy_price)
+                sell_price = self.target_price_at_buy_time
             else:
-                sell_price = self.get_stop_loss_price(buy_price)
+                sell_price = self.stop_loss_price_at_buy_time
 
             # Place the order
             order_id = self.place_limit_order(
@@ -210,6 +210,12 @@ class StrategyTemplate(ABC):
         self.holding_quantity = self.strategy_manager_state.holding_quantity
         self.mode = self.strategy_manager_state.trading_mode
         self.broker = self.strategy_manager_state.broker
+        self.stop_loss_price_at_buy_time = (
+            self.strategy_manager_state.stop_loss_price_at_buy_time
+        )
+        self.target_price_at_buy_time = (
+            self.strategy_manager_state.target_price_at_buy_time
+        )
 
     def place_limit_order(
         self, transaction_type: BaseTransactionType, price: float, quantity: int
@@ -285,14 +291,15 @@ class StrategyTemplate(ABC):
         Generate a sell signal for Trigger Price or Stop Loss Price
         based on the last traded price (LTP) and buy price.
         """
-        sell_price_target = float(self.get_target_price(buy_price))
+        sell_price_target = self.target_price_at_buy_time
         target_tolerance = (
             self.strategy_params.tolerance_percent / 100
         ) * sell_price_target
         if ltp > sell_price_target - target_tolerance:
             return TradeResult.PROFIT
 
-        sell_price_stop_loss = self.get_stop_loss_price(buy_price)
+        # Check for stop loss
+        sell_price_stop_loss = self.stop_loss_price_at_buy_time
         stop_loss_tolerance = (
             self.strategy_params.tolerance_percent / 100
         ) * sell_price_stop_loss
