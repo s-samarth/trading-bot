@@ -54,8 +54,12 @@ class StrategyManager:
         The file path for the trade ledger.
     - mode: TradingMode
         The trading mode (BACKTEST, LIVE, SIMULATION).
+    - broker: Broker
+        The broker to be used for live trading.
+        This is only used when mode is set to LIVE.
     - broker_secrets: BrokerSecrets
         The secrets for the broker.
+        This is only used when mode is set to LIVE.
     - execution_frequency_mode: ExecutionFrequencyMode
         The execution frequency mode (CONSTANT, DYNAMIC).
         DYNAMIC execution is meant to save unnecessary API calls
@@ -88,8 +92,9 @@ class StrategyManager:
         execution_frequency_mode: ExecutionFrequencyMode = ExecutionFrequencyMode.CONSTANT,
         execution_frequency: Optional[float] = 10,
         min_max_execution_frequency: Optional[Tuple[float, float]] = (1 / 24, 30),
-        error_cooldown_time: int = 60,
+        error_cooldown_time: int = 60,  # in minutes
         strategy_cooldown_time: int = 30,  # in days
+        logger: Optional[StrategyLogger] = None,
     ):
         self.strategy: StrategyTemplate = strategy(strategy_input, strategy_params)
         self.strategy_input: BaseStrategyInput = strategy_input
@@ -113,14 +118,16 @@ class StrategyManager:
         self.strategy_cooldown_time = (
             strategy_cooldown_time * 24 * 60 * 60
         )  # Convert days to seconds
-
-        self.logger: StrategyLogger = StrategyLogger(
-            strategy_name=self.strategy.strategy_name,
-            trading_symbol=self.strategy_input.trading_symbol,
-            trading_mode=self.mode,
-            reset_logger=True,
-            verbose=False,
-        )
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.logger: StrategyLogger = StrategyLogger(
+                strategy_name=self.strategy.strategy_name,
+                trading_symbol=self.strategy_input.trading_symbol,
+                trading_mode=self.mode,
+                reset_logger=True,
+                verbose=False,
+            )
 
     def run(self):
         """
