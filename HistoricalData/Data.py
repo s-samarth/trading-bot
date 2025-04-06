@@ -3,8 +3,6 @@ import sys
 import json
 from datetime import datetime, timedelta
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
-
 import pandas as pd
 import yfinance as yf
 
@@ -73,7 +71,7 @@ class StockDataRetriever:
         if save_data:
             file_path = os.path.join(self.folder_path, "daily_OHLCV.csv")
             stock_data.to_csv(file_path, index=True, header=True)
-            print(f"Saved historical data to {file_path}")
+            print(f"Saved historical data for {self.trading_symbol} to {file_path}")
 
         return stock_data
 
@@ -136,15 +134,8 @@ class StockDataRetriever:
         if save_data:
             file_path = os.path.join(self.folder_path, "minute_OHLCV.csv")
             stock_data_minute.to_csv(file_path, index=False, header=True)
-            print(f"Saved historical data to {file_path}")
+            print(
+                f"Saved Minute by Minute historical data for {self.trading_symbol} to {file_path}"
+            )
 
         return stock_data_minute
-
-
-if __name__ == "__main__":
-    stock_data_retriever = StockDataRetriever(trading_symbol=TradingSymbol.IDEA)
-    stock_data = stock_data_retriever.get_stock_historical_data(save_data=True)
-    stock_data_minute = stock_data_retriever.get_stock_data_minute_candles(
-        save_data=True
-    )
-    print(stock_data_minute)

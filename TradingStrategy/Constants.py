@@ -46,11 +46,15 @@ class Broker(StrEnum):
 class TradingSymbol(StrEnum):
     IDEA = "IDEA"
     HDFCBANK = "HDFCBANK"
+    RELIANCE = "RELIANCE"
+    TATAMOTORS = "TATAMOTORS"
 
     def description(self) -> str:
         descriptions = {
             "IDEA": "Represents the trading symbol for Idea Cellular.",
             "HDFCBANK": "Represents the trading symbol for HDFC Bank.",
+            "RELIANCE": "Represents the trading symbol for Reliance Industries.",
+            "TATAMOTORS": "Represents the trading symbol for Tata Motors.",
         }
         return descriptions.get(self.value, "Unknown Trading Symbol")
 
